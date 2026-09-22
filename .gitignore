@@ -1,0 +1,45 @@
+# Read this file top to bottom once. It is the list of things that must never
+# end up in the repository, and the reason to write it before the first commit
+# is that a file that was never tracked is invisible to git, and stays that way.
+
+# ---------------------------------------------------------------- dependencies
+# Installed from package.json. Large, regenerable, different on every machine.
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ------------------------------------------------------------------- build output
+# The built site. Produced by `npm run build`, never edited by hand.
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# ----------------------------------------------------------------- environment files
+# Values that grant access live here and are never committed. .env.example is
+# the exception on purpose: it documents the names without the values.
+.env*
+!.env.example
+
+# -------------------------------------------------------------------------- misc
+.DS_Store
+*.pem
+.vercel
+
+# ------------------------------------------------------------------------- debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ------------------------------------------------------------------------ testing
+/coverage
+
+
+.freebuff/

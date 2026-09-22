@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+/*
+  GLASSBOX — visual system
+  ------------------------
+  Reference object: a lab notebook / bench instrument panel, not a SaaS landing page.
+
+  Structure comes from warm paper tones, hairline rules and a printed register
+  grid. Depth comes from three paper values (page / raised / sunk), a faint
+  paper-grain texture and one soft edge on demo frames — not from glass, blur
+  or glow. No gradients, no dark mode inversion.
+
+  Colour: one accent (oxidised bench green) carries structure and interaction.
+  A marker ochre is reserved for highlighting prose, like a highlighter pen on
+  a notebook margin. Three semantic state colours report real state changes
+  inside demos, and appear nowhere else.
+
+  Type, four jobs from two families:
+    Plex Serif       headings — a printed field report
+    Plex Sans        prose
+    Plex Mono        labels, identifiers, units — the voice of the notebook
+    Spline Sans Mono numerals and readouts — the voice of the instrument
+  If something is set in the numeric face it is a measurement, not a sentence.
+*/
+
+@theme {
+  /* paper */
+  --color-paper: #f0ebdf;
+  --color-paper-raised: #f9f6ee;
+  --color-paper-sunk: #e6ddc9;
+
+  /* ink */
+  --color-ink: #1c1913;
+  --color-ink-soft: #4c463a;
+  --color-ink-faint: #71695a;
+
+  /* rules */
+  --color-rule: #d5cab3;
+  --color-rule-strong: #a99c82;
+
+  /* the accent */
+  --color-accent: #1f5f4e;
+  --color-accent-bright: #2f8065;
+  --color-accent-tint: #dce9df;
+
+  /* marker ochre: prose highlighting only, never structure */
+  --color-marker: #b0740f;
+  --color-marker-tint: #f6e8c6;
+
+  /* semantic state, used only in demos and status marks */
+  --color-ok: #35774b;
+  --color-ok-tint: #e0ead9;
+  --color-warn: #a3620b;
+  --color-warn-tint: #f3e3c2;
+  --color-bad: #b03a2b;
+  --color-bad-tint: #f3ddd4;
+
+  /* type */
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-plex-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-numeric: var(--font-spline-mono), ui-monospace, monospace;
+
+  /* motion */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* the one soft edge, for demo frames */
+  --shadow-panel:
+    0 1px 2px rgb(28 25 19 / 0.06), 0 8px 20px -14px rgb(28 25 19 / 0.28);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Paper grain: the page is a physical object, so it has a surface. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background-color: var(--color-marker-tint);
+  }
+
+  /* What <mark> means here: a highlighter pass over a printed page. */
+  mark {
+    background-color: var(--color-marker-tint);
+    color: inherit;
+    box-shadow:
+      -0.2em 0 0 var(--color-marker-tint),
+      0.2em 0 0 var(--color-marker-tint);
+  }
+
+  /* One visible focus treatment for the whole site. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  /* Interactive elements glide instead of snapping. */
+  :where(a, button) {
+    transition-property:
+      color, background-color, border-color, outline-color, transform;
+    transition-duration: 170ms;
+    transition-timing-function: var(--ease-soft);
+  }
+
+  /* The bench has a scrollbar too; keep it quiet. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-rule-strong);
+    border: 3px solid var(--color-paper);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Numerals are instrument readouts: their own face, always aligned. */
+@utility readout {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Legacy tabular-nums helper, for places that stay in the mono face. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The small uppercase mono label that names a field. Used sparingly. */
+@utility field-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

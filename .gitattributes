@@ -1,0 +1,12 @@
+# Normalise line endings so that this project produces the same diffs whatever
+# machine it is edited on. Git stores LF in the repository; your editor can use
+# whatever it likes locally. Without this, a Windows checkout rewrites every file
+# it touches and the history fills up with noise.
+* text=auto eol=lf
+
+# Binary files, left exactly as they are.
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff binary
+*.woff2 binary
