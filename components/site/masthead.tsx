@@ -25,9 +25,11 @@ export function Masthead() {
         className="group flex items-center gap-2.5 transition-colors hover:text-accent"
       >
         <GlassboxMark />
-        <span className="font-mono text-[13px] font-medium tracking-[0.22em]">
-          GLASSBOX
-        </span>
+        {/* The wordmark is a masthead, not a label: Cinzel — a capitals-only
+            inscriptional serif — tracked out, so the header reads as the title
+            page of a printed report. It is the one ornamental face on the site
+            and is scoped to this mark alone. */}
+        <span className="type-wordmark">Glassbox</span>
       </Link>
 
       <p className="hidden text-right font-mono text-[10.5px] leading-[1.5] text-ink-faint sm:block">

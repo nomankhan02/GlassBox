@@ -79,9 +79,7 @@ export function RegisterList({ items }: { items: RegisterItem[] }) {
 
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-                        <span className="font-serif text-[19px] leading-[1.3] tracking-[-0.01em]">
-                          {item.title}
-                        </span>
+                        <span className="type-entry">{item.title}</span>
                         {item.status}
                       </span>
                       <span className="mt-1 block max-w-[62ch] text-[13.5px] leading-[1.6] text-ink-soft">
@@ -95,6 +93,13 @@ export function RegisterList({ items }: { items: RegisterItem[] }) {
 
                 <AnimatePresence initial={false}>
                   {open ? (
+                    /*
+                      Opening a case is a two-beat move, and it is the only
+                      motion on these pages: the casing expands first, then a
+                      rule draws across the top of the contents and they settle
+                      into place beneath it. It reads as the lid coming off and
+                      the contents being laid out, not as a card appearing.
+                    */
                     <motion.div
                       id={panelId}
                       key="panel"
@@ -104,7 +109,28 @@ export function RegisterList({ items }: { items: RegisterItem[] }) {
                       transition={transition}
                       className="overflow-hidden"
                     >
-                      <div className="pb-9 xl:pl-11">{item.panel}</div>
+                      <motion.span
+                        aria-hidden
+                        className="block h-px origin-left bg-rule-strong"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{
+                          duration: reduceMotion ? 0 : 0.42,
+                          ease: "easeOut",
+                        }}
+                      />
+                      <motion.div
+                        className="pt-5 pb-9 xl:pl-11"
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          ...transition,
+                          delay: reduceMotion ? 0 : 0.07,
+                          duration: reduceMotion ? 0 : 0.38,
+                        }}
+                      >
+                        {item.panel}
+                      </motion.div>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>

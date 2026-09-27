@@ -15,13 +15,20 @@
   a notebook margin. Three semantic state colours report real state changes
   inside demos, and appear nowhere else.
 
-  Type, four jobs from two families:
-    Plex Serif       headings — a printed field report
+  Type, five jobs from five families, and one of them is allowed to be strange:
+    Fraunces         headings only — a printed specimen plate. Optical size,
+                     SOFT and WONK give it a mechanical cut at display sizes
+                     and a legible one in the nav. It never sets prose.
+    Cinzel           the wordmark only. A capitals-only Roman inscriptional serif
+                     and the single ornamental moment on the site; it is scoped
+                     to .type-wordmark and appears nowhere else.
     Plex Sans        prose
     Plex Mono        labels, identifiers, units — the voice of the notebook
-    Spline Sans Mono numerals and readouts — the voice of the instrument
+    Martian Mono     numerals and readouts — the voice of the instrument
   If something is set in the numeric face it is a measurement, not a sentence.
+  If something is set in the display face it is a hierarchy, not a sentence.
 */
+
 
 @theme {
   /* paper */
@@ -57,9 +64,9 @@
 
   /* type */
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-plex-serif), ui-serif, Georgia, serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-numeric: var(--font-spline-mono), ui-monospace, monospace;
+  --font-numeric: var(--font-martian-mono), ui-monospace, monospace;
 
   /* motion */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -127,10 +134,13 @@
   h1,
   h2,
   h3 {
-    font-family: var(--font-serif);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.15;
+    font-family: var(--font-display);
+    /* SOFT pinned down and WONK on: the sharper cut of the display face, the
+       one that reads as a specimen plate rather than a soft editorial serif. */
+    font-variation-settings: "SOFT" 0, "WONK" 1;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
   }
 
   /* Interactive elements glide instead of snapping. */
@@ -159,16 +169,112 @@
   }
 }
 
-/* Numerals are instrument readouts: their own face, always aligned. */
+/*
+  The type scale. Four steps, each a deliberate jump in size or weight rather
+  than one heading style made smaller: the page title is heavy and tight, a
+  section steps down a full weight, an entry steps down again, and the display
+  face only appears in the nav at the size where it stays legible.
+*/
+@utility type-display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  font-weight: 600;
+  font-size: clamp(2.125rem, 1.45rem + 2.4vw, 2.875rem);
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+}
+
+@utility type-section {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.016em;
+}
+
+@utility type-entry {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+}
+
+@utility type-nav {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+/*
+  The wordmark is a masthead: Cinzel, a capitals-only inscriptional serif, set
+  tracked out. This is the one place on the site allowed to be ornamental and
+  visually bold, and the utility is scoped so that nothing else inherits it.
+*/
+@utility type-wordmark {
+  font-family: var(--font-cinzel), ui-serif, Georgia, serif;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/*
+  Numerals are instrument readouts: their own face, always aligned, and set
+  heavier than the surrounding text so a measurement announces itself on the
+  page instead of blending into the sentence.
+*/
 @utility readout {
   font-family: var(--font-numeric);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 /* Legacy tabular-nums helper, for places that stay in the mono face. */
 @utility tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+  Motion. One gesture, used once per page and nowhere else: things that are part
+  of a printed record are drawn as if being laid down — a rule draws left to
+  right, a label settles into place. Delays are set inline, per item, so the
+  sequence lives with the content that is being sequenced.
+*/
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes settle-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility draw-rule {
+  transform-origin: left center;
+  animation: rule-draw 620ms var(--ease-soft) both;
+}
+
+@utility settle-in {
+  animation: settle-in 520ms var(--ease-soft) both;
 }
 
 /* The small uppercase mono label that names a field. Used sparingly. */
@@ -185,6 +291,7 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

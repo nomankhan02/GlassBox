@@ -8,6 +8,9 @@ import {
   type RegisterItem,
 } from "@/components/site/register-list";
 import { PromptFragment, StatusTag } from "@/components/site/register";
+import { Break } from "@/components/site/break";
+import { Diagram } from "@/components/site/diagram";
+import { Prose } from "@/components/site/prose";
 import { RateLimitFigure } from "./rate-limit-figure";
 import { PlannedDemo } from "./planned-demo";
 
@@ -49,10 +52,19 @@ function ConceptPanel({ concept }: { concept: Concept }) {
         {/* Static content, so positional keys are stable and correct here. */}
         {concept.plain.map((paragraph, index) => (
           <p key={index} className="text-ink-soft">
-            {paragraph}
+            <Prose text={paragraph} />
           </p>
         ))}
       </div>
+
+      {/* The schematic comes first, while the shape is still fresh: the prose
+          explains it, the drawing shows it. The break follows with the figures
+          that sit beside that shape. */}
+      {concept.diagram ? <Diagram {...concept.diagram} /> : null}
+
+      {/* The break lands here, between the reasoning and the wording to reuse:
+          one small thing to look at before the entry stops explaining. */}
+      {concept.brk ? <Break {...concept.brk} /> : null}
 
       <PromptFragment>{concept.tell}</PromptFragment>
 

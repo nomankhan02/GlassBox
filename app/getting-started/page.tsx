@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHead } from "@/components/site/page-head";
+import { Break } from "@/components/site/break";
 import { StepRegister } from "@/components/steps/step-register";
 import { STEPS } from "@/lib/getting-started";
 
@@ -19,7 +20,7 @@ export default function GettingStartedPage() {
         lede="Five things to put in place before you ask a tool to build anything. Four of them guard against a mistake you cannot take back later, and the fifth changes the quality of everything that comes after it. They are written to be done in order."
         meta={[
           { label: "steps", value: STEPS.length },
-          { label: "reading time", value: "about 12 minutes" },
+          { label: "reading time", value: "about 15 minutes" },
           { label: "prerequisites", value: "none" },
         ]}
       />
@@ -37,7 +38,43 @@ export default function GettingStartedPage() {
           that was committed once is in the history for good, and the only real
           remedy is to rotate whatever was in it.
         </p>
+        <p>
+          Each step carries the one rule it exists to enforce, set as a marked
+          line. The reasoning around it is how you decide whether the rule
+          applies to a situation the step does not mention, which it will.
+        </p>
       </div>
+
+      {/*
+        The order of the steps is the argument, so it is shown as a comparison
+        rather than asserted in another paragraph: what is cheap to change
+        later against what is not.
+      */}
+      <Break
+        kind="compare"
+        label="the five steps, sorted by whether you can take it back"
+        left={{
+          title: "still cheap to change",
+          tone: "ok",
+          points: [
+            "Renaming the folder, or moving it somewhere else.",
+            "Committing again after a change broke something.",
+            "Adding a dependency you later drop.",
+          ],
+          note: "costs a minute",
+        }}
+        right={{
+          title: "expensive, or not possible",
+          tone: "bad",
+          points: [
+            "A secret that reached a commit: rotating it is the only remedy.",
+            "A path tracked once, which stays in the history for good.",
+            "A schema and its migrations, already built on top of.",
+          ],
+          note: "costs a rotation, or a history rewrite",
+        }}
+        verdict="Four of the five steps exist because of the right-hand column. That is the whole reason they come before the first prompt."
+      />
 
       <div className="mt-11">
         <StepRegister />

@@ -56,8 +56,8 @@ export function LayerRail() {
                       {layer.code}
                     </span>
                     <span
-                      className={`text-[13px] ${
-                        active ? "font-medium text-accent" : "text-ink-soft"
+                      className={`type-nav ${
+                        active ? "text-accent" : "text-ink-soft"
                       }`}
                     >
                       {layer.label}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHead } from "@/components/site/page-head";
+import { Break } from "@/components/site/break";
 import { PromptFragment } from "@/components/site/register";
 import { LAYERS } from "@/lib/layers";
 import { CONCEPTS } from "@/lib/concepts";
@@ -34,7 +35,7 @@ export default function Home() {
       />
 
       <section className="mt-14">
-        <h2 className="text-[20px]">The three layers</h2>
+        <h2 className="type-section">The three layers</h2>
         <p className="mt-3 max-w-[68ch] text-ink-soft">
           The site goes one level deeper at a time. Layer 0 is the bench you set
           up before building. Layer 1 is the mechanism inside a running app.
@@ -43,9 +44,15 @@ export default function Home() {
           one answers the question you have right now.
         </p>
 
+        {/*
+          The page's one motion moment: the index prints itself on load. Each
+          row's rule draws left to right and its label settles in behind the
+          rule, top to bottom. Nothing here is scroll-triggered and nothing else
+          on the page moves.
+        */}
         <ol className="mt-7 border-t border-rule">
-          {LAYERS.map((layer) => (
-            <li key={layer.href} className="border-b border-rule">
+          {LAYERS.map((layer, index) => (
+            <li key={layer.href} className="relative">
               <Link
                 href={layer.href}
                 className="group grid gap-x-8 gap-y-1.5 py-5 md:grid-cols-[56px_minmax(0,1fr)] xl:grid-cols-[56px_minmax(0,1fr)_236px]"
@@ -54,7 +61,10 @@ export default function Home() {
                   {layer.code}
                 </span>
                 <span className="min-w-0">
-                  <span className="font-serif text-[19px] leading-[1.3] transition-colors group-hover:text-accent">
+                  <span
+                    className="type-entry settle-in block transition-colors group-hover:text-accent"
+                    style={{ animationDelay: `${index * 90 + 130}ms` }}
+                  >
                     {layer.label}
                   </span>
                   <span className="mt-1 block max-w-[62ch] text-[13.5px] leading-[1.65] text-ink-soft">
@@ -65,6 +75,11 @@ export default function Home() {
                   {layer.contents}
                 </span>
               </Link>
+              <span
+                aria-hidden
+                className="draw-rule absolute bottom-0 left-0 h-px w-full bg-rule"
+                style={{ animationDelay: `${index * 90}ms` }}
+              />
             </li>
           ))}
         </ol>
@@ -79,7 +94,7 @@ export default function Home() {
       </section>
 
       <section className="mt-14">
-        <h2 className="text-[20px]">Where this is up to</h2>
+        <h2 className="type-section">Where this is up to</h2>
         <p className="mt-3 max-w-[68ch] text-ink-soft">
           Stated plainly, because a site about how things actually work should
           not be vague about its own state. One interactive demo is built so
@@ -96,7 +111,7 @@ export default function Home() {
               <dt className="font-mono text-[11px] text-ink-faint">
                 {row.label}
               </dt>
-              <dd className="font-mono text-[11px] tnum text-ink-soft">
+              <dd className="readout text-[11px] text-ink-soft">
                 {row.value}
               </dd>
             </div>
@@ -109,6 +124,19 @@ export default function Home() {
           counter and state change you click through is simulated in the browser
           and nothing leaves the page.
         </p>
+
+        <Break
+          kind="flow"
+          label="the path layer 01 follows, one click at a time"
+          steps={[
+            "browser asks",
+            "request travels",
+            "server decides",
+            "response returns",
+            "page updates",
+          ]}
+          note="Ten mechanisms sit along this path. 1.07 is the one built to watch happen live."
+        />
 
         <p className="mt-4 font-mono text-[11px] text-ink-faint">
           start here:{" "}

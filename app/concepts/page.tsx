@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHead } from "@/components/site/page-head";
+import { Break } from "@/components/site/break";
 import { ConceptRegister } from "@/components/concepts/concept-register";
 import { CONCEPTS } from "@/lib/concepts";
 
@@ -43,6 +44,25 @@ export default function ConceptsPage() {
           others: state on screen, moved by clicking, explained as it changes.
         </p>
       </div>
+
+      {/* Counted from the register below rather than typed in, so the summary
+          cannot disagree with the thing it summarises. */}
+      <Break
+        kind="stats"
+        label="where layer 01 is up to"
+        stats={[
+          { value: String(CONCEPTS.length), label: "mechanisms written" },
+          {
+            value: String(demosBuilt),
+            label: "explained with a working demo",
+          },
+          {
+            value: String(CONCEPTS.length - demosBuilt),
+            label: "written, demo still queued",
+          },
+        ]}
+        note="Built one at a time, in the order each mechanism assumes the last."
+      />
 
       <div className="mt-11">
         <ConceptRegister />

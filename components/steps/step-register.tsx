@@ -43,6 +43,16 @@ function StepPanel({ step }: { step: (typeof STEPS)[number] }) {
         ))}
       </div>
 
+      {/*
+        The one rule this step exists to enforce, given the site's highlighter
+        pass over prose: the line worth keeping if nothing else from the step
+        is. It sits between the reasoning and the specimen, so the prose does
+        the explaining and this does the remembering.
+      */}
+      <p className="mt-5 max-w-[70ch]">
+        <mark>{step.rule}</mark>
+      </p>
+
       {step.specimen ? <Specimen items={step.specimen} /> : null}
 
       <PromptFragment>{step.tell}</PromptFragment>

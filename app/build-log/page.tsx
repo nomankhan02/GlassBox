@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHead } from "@/components/site/page-head";
+import { Break } from "@/components/site/break";
 import { BUILD_LOG, FAULT_LEGEND, QUEUED } from "@/lib/build-log";
 
 export const metadata: Metadata = {
@@ -11,6 +12,16 @@ export const metadata: Metadata = {
 export default function BuildLogPage() {
   const first = BUILD_LOG[0];
   const latest = BUILD_LOG[BUILD_LOG.length - 1];
+
+  const totalFaults = BUILD_LOG.reduce(
+    (total, entry) => total + entry.faults.length,
+    0,
+  );
+  const promptFaults = BUILD_LOG.reduce(
+    (total, entry) =>
+      total + entry.faults.filter((fault) => fault.source === "prompt").length,
+    0,
+  );
 
   return (
     <>
@@ -27,7 +38,7 @@ export default function BuildLogPage() {
       />
 
       <section className="mt-10 max-w-[70ch]">
-        <h2 className="text-[20px]">How this log works</h2>
+        <h2 className="type-section">How this log works</h2>
         <div className="mt-3 space-y-4 text-ink-soft">
           <p>
             Each entry has the same three parts, and the faults are labelled by
@@ -44,11 +55,17 @@ export default function BuildLogPage() {
           </p>
         </div>
 
+        {/*
+          The page's one motion moment: the fault legend stamps in row by row
+          on load. These four labels are the page's vocabulary, and it is the
+          only thing on the page that moves.
+        */}
         <dl className="mt-6 border-t border-rule pt-4">
-          {Object.entries(FAULT_LEGEND).map(([source, meaning]) => (
+          {Object.entries(FAULT_LEGEND).map(([source, meaning], index) => (
             <div
               key={source}
-              className="flex flex-wrap gap-x-4 gap-y-1 border-b border-rule/70 py-2 last:border-b-0 md:flex-nowrap"
+              className="settle-in flex flex-wrap gap-x-4 gap-y-1 border-b border-rule/70 py-2 last:border-b-0 md:flex-nowrap"
+              style={{ animationDelay: `${index * 80}ms` }}
             >
               <dt className="w-[82px] shrink-0 font-mono text-[10.5px] text-ink-soft">
                 [{source}]
@@ -59,6 +76,26 @@ export default function BuildLogPage() {
             </div>
           ))}
         </dl>
+
+        <Break
+          kind="stats"
+          label="what the record contains so far"
+          stats={[
+            {
+              value: String(BUILD_LOG.length),
+              label: "entries, transcribed as they were sent",
+            },
+            {
+              value: String(totalFaults),
+              label: "faults recorded across them",
+            },
+            {
+              value: String(promptFaults),
+              label: "where the fault was in the prompt, not the output",
+            },
+          ]}
+          note="Counted from the entries below, so it cannot drift from them."
+        />
       </section>
 
       {BUILD_LOG.map((entry) => (
@@ -128,7 +165,7 @@ export default function BuildLogPage() {
       ))}
 
       <section className="mt-20">
-        <h2 className="text-[20px]">Queued, and deliberately not built</h2>
+        <h2 className="type-section">Queued, and deliberately not built</h2>
         <p className="mt-3 max-w-[70ch] text-ink-soft">
           A hardening pass belongs at the end of this project, once there is
           something real to harden. It is written down here rather than built,

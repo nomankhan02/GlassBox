@@ -28,9 +28,7 @@ export function PageHead({
         <span className="field-label">{layerNote}</span>
       </p>
 
-      <h1 className="mt-6 max-w-[24ch] text-[31px] md:text-[40px]">
-        {title}
-      </h1>
+      <h1 className="type-display mt-6 max-w-[22ch]">{title}</h1>
       <span
         aria-hidden
         className="mt-5 block h-[3px] w-14 bg-marker"

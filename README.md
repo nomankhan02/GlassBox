@@ -78,9 +78,11 @@ is flat.
 because the site is full of measurements. Three jobs from one voice: Plex Serif
 for headings so a page reads like a printed field report, Plex Sans for
 explanatory prose, and Plex Mono reserved for identifiers and units. Numerals in
-counters, timings and readouts get a fourth face, Spline Sans Mono — boxier,
-more instrument-like digits, set tabular, so a measurement reads as a measurement
-rather than as part of a sentence.
+counters, timings and readouts get a fourth face, Martian Mono — squarer, more
+mechanical digits, set tabular and heavier than the surrounding text, so a
+measurement reads as a measurement rather than as part of a sentence. A fifth
+face, Cinzel, is reserved for the wordmark alone: a capitals-only inscriptional
+serif and the single ornamental moment on the site.
 
 Two structural devices do the work that templates usually do with cards and
 icons:
