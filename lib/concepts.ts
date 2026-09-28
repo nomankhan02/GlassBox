@@ -162,7 +162,7 @@ export const CONCEPTS: Concept[] = [
         {
           id: "db",
           label: "the database",
-          sub: "outlives every session",
+          sub: "outlives sessions",
           col: 1,
           row: 0,
         },
@@ -274,6 +274,8 @@ export const CONCEPTS: Concept[] = [
     diagram: {
       kind: "flow",
       label: "who is holding the state: the server, or the client",
+      rowLabels: ["session", "token"],
+      rowGap: 58,
       nodes: [
         { id: "client-s", label: "client", sub: "holds a random id", col: 0, row: 0 },
         { id: "server-s", label: "server", sub: "holds the session", col: 1, row: 0 },
@@ -340,6 +342,7 @@ export const CONCEPTS: Concept[] = [
     diagram: {
       kind: "flow",
       label: "what is written down, and what is only ever compared",
+      rowGap: 76,
       nodes: [
         { id: "pw", label: "password", sub: "at sign-up", col: 0, row: 0 },
         { id: "hash", label: "hash function", sub: "salted · slow", col: 1, row: 0 },
@@ -517,6 +520,7 @@ export const CONCEPTS: Concept[] = [
     diagram: {
       kind: "flow",
       label: "where a secret is read, and the line it never crosses",
+      rowGap: 52,
       nodes: [
         {
           id: "env",

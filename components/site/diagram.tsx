@@ -21,18 +21,25 @@ import type {
 
 /* ---- shared geometry ---- */
 
-const PAD_X = 14;
-const PAD_Y = 24;
-const BOX_W = 112;
+/** Outer margin of the drawing, and the minimum padding inside a node. */
+const PAD = 20;
+/** Minimum horizontal padding each side of the longest line in a node. */
+const TEXT_PAD = 16;
+const MIN_BOX_W = 88;
 const BOX_H = 42;
-const COL_GAP = 46;
-const ROW_GAP = 34;
-const COL_W = BOX_W + COL_GAP;
-const ROW_H = BOX_H + ROW_GAP;
+const COL_GAP = 58;
+const ROW_GAP = 46;
 /** Perpendicular offset of one lane, so parallel arrows do not overlap. */
 const LANE_STEP = 13;
-/** Rough advance width of a 9.5px mono glyph, for sizing the label mask. */
-const LABEL_CHAR = 5.6;
+/** Corner slot reserved for the lock badge, kept clear of the node's text. */
+const LOCK_SLOT = 20;
+const LABEL_H = 11;
+const LABEL_GAP = 6;
+const LABEL_PAD = 8;
+const ROW_LABEL_H = 16;
+const BOUNDARY_FOOT = 22;
+const LABEL_SIZE = 9.5;
+const ROW_LABEL_SIZE = 8.5;
 
 const STROKE_TONE: Record<Tone, string> = {
   plain: "var(--color-rule-strong)",
@@ -46,40 +53,114 @@ const TEXT_TONE: Record<Tone, string> = {
   bad: "var(--color-bad)",
 };
 
-type Rect = { x: number; y: number; w: number; h: number; cx: number; cy: number };
 type Pt = { x: number; y: number };
+type Box = { x: number; y: number; w: number; h: number };
+type Rect = Box & { cx: number; cy: number };
+type Seg = { a: Pt; b: Pt };
 
-function rectOf(node: DiagramNode): Rect {
-  const x = PAD_X + node.col * COL_W;
-  const y = PAD_Y + node.row * ROW_H;
-  return { x, y, w: BOX_W, h: BOX_H, cx: x + BOX_W / 2, cy: y + BOX_H / 2 };
+/**
+ * Advance width of a Plex Mono run. The face is 0.6em; the extra headroom
+ * keeps this an over-estimate, so a node sized from it cannot be too narrow.
+ */
+function advance(text: string, size: number) {
+  return text.length * size * 0.62;
 }
 
-/** Where a line from `from`'s centre toward `to`'s centre leaves the box. */
-function edgePoint(from: Rect, to: Rect): Pt {
-  const dx = to.cx - from.cx;
-  const dy = to.cy - from.cy;
-  const sx = dx !== 0 ? from.w / 2 / Math.abs(dx) : Infinity;
-  const sy = dy !== 0 ? from.h / 2 / Math.abs(dy) : Infinity;
-  const scale = Math.min(sx, sy);
-  return { x: from.cx + dx * scale, y: from.cy + dy * scale };
+function intersects(a: Box, b: Box, pad = 0) {
+  return (
+    a.x < b.x + b.w + pad &&
+    b.x < a.x + a.w + pad &&
+    a.y < b.y + b.h + pad &&
+    b.y < a.y + a.h + pad
+  );
+}
+
+function within(b: Box, w: number, h: number) {
+  return (
+    b.x >= -0.5 && b.y >= -0.5 && b.x + b.w <= w + 0.5 && b.y + b.h <= h + 0.5
+  );
+}
+
+function padBox(box: Box, pad: number): Box {
+  return { x: box.x - pad, y: box.y - pad, w: box.w + pad * 2, h: box.h + pad * 2 };
+}
+
+function rectBox(rect: Rect): Box {
+  return { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+}
+
+function segBox(seg: Seg): Box {
+  return {
+    x: Math.min(seg.a.x, seg.b.x),
+    y: Math.min(seg.a.y, seg.b.y),
+    w: Math.abs(seg.b.x - seg.a.x),
+    h: Math.abs(seg.b.y - seg.a.y),
+  };
+}
+
+function between(value: number, a: number, b: number) {
+  return value > Math.min(a, b) && value < Math.max(a, b);
+}
+
+/** Widest node needed to hold this node's text with the minimum padding. */
+function nodeBoxWidth(node: DiagramNode) {
+  const content = Math.max(
+    advance(node.label, 10),
+    node.sub ? advance(node.sub, 8.5) : 0,
+  );
+  return Math.max(
+    MIN_BOX_W,
+    Math.ceil(content) + 2 + TEXT_PAD * 2 + (node.lock ? LOCK_SLOT : 0),
+  );
 }
 
 /**
- * Unit perpendicular, normalised so lane offsets mean the same thing whichever
- * way the arrow points: left-to-right is the reference direction.
+ * Every arrow is drawn square: horizontal, vertical, or an L whose legs are
+ * both axis-aligned. A blocked arrow that crosses the boundary stops on it,
+ * which keeps the stop-bar horizontal on a left-to-right run.
  */
-function perpendicular(from: Rect, to: Rect): Pt {
-  let ux = to.cx - from.cx;
-  let uy = to.cy - from.cy;
-  const len = Math.hypot(ux, uy) || 1;
-  ux /= len;
-  uy /= len;
-  if (ux < 0 || (ux === 0 && uy < 0)) {
-    ux = -ux;
-    uy = -uy;
+function routeArrow(
+  from: Rect,
+  to: Rect,
+  lane: number,
+  blocked: boolean,
+  boundaryX: number | null,
+): Seg[] {
+  const sameRow = Math.abs(from.cy - to.cy) < 1;
+  const sameCol = Math.abs(from.cx - to.cx) < 1;
+
+  if (sameRow) {
+    const y = from.cy + lane * LANE_STEP;
+    const dir = Math.sign(to.cx - from.cx) || 1;
+    const x0 = dir > 0 ? from.x + from.w : from.x;
+    let x1 = dir > 0 ? to.x : to.x + to.w;
+    if (blocked && boundaryX !== null && between(boundaryX, x0, x1)) {
+      x1 = boundaryX;
+    }
+    return [{ a: { x: x0, y }, b: { x: x1, y } }];
   }
-  return { x: -uy, y: ux };
+
+  if (sameCol) {
+    const x = from.cx + lane * LANE_STEP;
+    const dir = Math.sign(to.cy - from.cy) || 1;
+    const y0 = dir > 0 ? from.y + from.h : from.y;
+    const y1 = dir > 0 ? to.y : to.y + to.h;
+    return [{ a: { x, y: y0 }, b: { x, y: y1 } }];
+  }
+
+  /* A diagonal pair: leave horizontally, then turn and enter the target. */
+  const dir = Math.sign(to.cx - from.cx) || 1;
+  const x0 = dir > 0 ? from.x + from.w : from.x;
+  const y0 = from.cy;
+  if (blocked && boundaryX !== null && between(boundaryX, x0, to.cx)) {
+    return [{ a: { x: x0, y: y0 }, b: { x: boundaryX, y: y0 } }];
+  }
+  const x1 = to.cx;
+  const y1 = to.cy > from.cy ? to.y : to.y + to.h;
+  return [
+    { a: { x: x0, y: y0 }, b: { x: x1, y: y0 } },
+    { a: { x: x1, y: y0 }, b: { x: x1, y: y1 } },
+  ];
 }
 
 /* ---- frame + canvas ---- */
@@ -108,11 +189,14 @@ function Canvas({
   width,
   height,
   ariaLabel,
+  dataKind,
   children,
 }: {
   width: number;
   height: number;
   ariaLabel: string;
+  /** Marks the drawing for the automated diagram check. */
+  dataKind: "flow" | "timeline";
   children: React.ReactNode;
 }) {
   return (
@@ -121,6 +205,7 @@ function Canvas({
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={ariaLabel}
+        data-diagram={dataKind}
         className="block h-auto w-full"
         style={{ minWidth: width }}
       >
@@ -145,26 +230,193 @@ export function Diagram(props: DiagramSpec) {
   return <Flow {...props} />;
 }
 
+/**
+ * Place an arrow's label clear of every box, rule, arrow and other label.
+ * Candidates run from the natural spot outward, and the first that fits both
+ * the drawing and the free space wins.
+ */
+function placeLabel(
+  seg: Seg,
+  text: string,
+  from: Rect,
+  obstacles: Box[],
+  placed: Box[],
+  width: number,
+  height: number,
+): Box {
+  const w = advance(text, LABEL_SIZE);
+  const h = LABEL_H;
+  const rowTop = from.y;
+  const rowBottom = from.y + from.h;
+  const candidates: Box[] = [];
+
+  if (seg.a.y === seg.b.y) {
+    /* Horizontal: try just off the stroke, then off the whole row. */
+    const y = seg.a.y;
+    const mid = (seg.a.x + seg.b.x) / 2;
+    const xs = [mid - w / 2, from.x, from.x + from.w - w];
+    const ys = [
+      y - LABEL_GAP - h,
+      y + LABEL_GAP,
+      rowTop - LABEL_GAP - h,
+      rowBottom + LABEL_GAP,
+    ];
+    for (const yc of ys) {
+      for (const xc of xs) candidates.push({ x: xc, y: yc, w, h });
+    }
+  } else {
+    /* Vertical: beside the line, never across it. */
+    const x = seg.a.x;
+    const mid = (seg.a.y + seg.b.y) / 2;
+    candidates.push({ x: x + LABEL_PAD, y: mid - h / 2, w, h });
+    candidates.push({ x: x - LABEL_PAD - w, y: mid - h / 2, w, h });
+  }
+
+  const clear = (box: Box) =>
+    obstacles.every((obstacle) => !intersects(box, obstacle, 0)) &&
+    placed.every((other) => !intersects(box, other, 6));
+
+  const usable = candidates.filter((box) => box.x >= 0 && box.y >= 0);
+  return (
+    usable.find((box) => within(box, width, height) && clear(box)) ??
+    usable.find(clear) ??
+    usable[0] ??
+    candidates[0]
+  );
+}
+
 function Flow({
   label,
   nodes,
   arrows,
   boundary,
+  rowLabels,
+  rowGap,
   note,
 }: Extract<DiagramSpec, { kind: "flow" }>) {
   if (nodes.length === 0) return null;
 
-  const rects = new Map(nodes.map((node) => [node.id, rectOf(node)]));
   const maxCol = Math.max(...nodes.map((node) => node.col));
   const maxRow = Math.max(...nodes.map((node) => node.row));
-  const width = PAD_X * 2 + maxCol * COL_W + BOX_W;
-  /* A boundary carries its name underneath the boxes, so it gets a footer. */
-  const height =
-    PAD_Y * 2 + maxRow * ROW_H + BOX_H + (boundary ? 20 : 0);
+
+  /* Each column is as wide as its widest node, so text always fits its box. */
+  const colW: number[] = [];
+  for (let c = 0; c <= maxCol; c += 1) colW[c] = MIN_BOX_W;
+  for (const node of nodes) {
+    colW[node.col] = Math.max(colW[node.col], nodeBoxWidth(node));
+  }
+
+  const colX: number[] = [];
+  let cursor = PAD;
+  for (let c = 0; c <= maxCol; c += 1) {
+    colX[c] = cursor;
+    cursor += colW[c] + COL_GAP;
+  }
+  const baseWidth = cursor - COL_GAP + PAD;
+
+  const hasRowLabels = Boolean(rowLabels && rowLabels.length > 0);
+  const gap = rowGap ?? ROW_GAP;
+  const rowY: number[] = [];
+  let cursorY = PAD + (hasRowLabels ? ROW_LABEL_H : 0);
+  for (let r = 0; r <= maxRow; r += 1) {
+    rowY[r] = cursorY;
+    cursorY += BOX_H + gap;
+  }
+  const baseHeight =
+    rowY[maxRow] + BOX_H + PAD + (boundary ? BOUNDARY_FOOT : 0);
+
+  const rects = new Map<string, Rect>();
+  for (const node of nodes) {
+    const x = colX[node.col];
+    const y = rowY[node.row];
+    const w = colW[node.col];
+    rects.set(node.id, { x, y, w, h: BOX_H, cx: x + w / 2, cy: y + BOX_H / 2 });
+  }
 
   const boundaryX = boundary
-    ? PAD_X + boundary.afterCol * COL_W + BOX_W + COL_GAP / 2
+    ? colX[boundary.afterCol] + colW[boundary.afterCol] + COL_GAP / 2
     : null;
+
+  /*
+    Everything a label must keep clear of: the boxes, the boundary rule, and
+    every arrow segment and end-cap. Labels are placed one at a time into the
+    same set, so no two labels can crowd each other either.
+  */
+  const obstacles: Box[] = [];
+  for (const rect of rects.values()) obstacles.push(rectBox(rect));
+  if (boundaryX !== null) {
+    obstacles.push({
+      x: boundaryX - 1,
+      y: rowY[0] - 4,
+      w: 2,
+      h: rowY[maxRow] + BOX_H + 4 - (rowY[0] - 4),
+    });
+  }
+
+  type Route = { arrow: DiagramArrow; segs: Seg[]; from: Rect; labelBox: Box | null };
+  const routes: Route[] = [];
+  for (const arrow of arrows) {
+    const from = rects.get(arrow.from);
+    const to = rects.get(arrow.to);
+    if (!from || !to) continue;
+    const segs = routeArrow(
+      from,
+      to,
+      arrow.lane ?? 0,
+      Boolean(arrow.blocked),
+      boundaryX,
+    );
+    routes.push({ arrow, segs, from, labelBox: null });
+    for (const seg of segs) obstacles.push(padBox(segBox(seg), 2));
+    const end = segs[segs.length - 1].b;
+    obstacles.push(padBox({ x: end.x, y: end.y, w: 0, h: 0 }, 8));
+    if (arrow.both) {
+      const start = segs[0].a;
+      obstacles.push(padBox({ x: start.x, y: start.y, w: 0, h: 0 }, 8));
+    }
+  }
+
+  /* Row titles first: they are structural, and everything else courses round. */
+  const labels: Box[] = [];
+  const rowTitles: { box: Box; text: string }[] = [];
+  if (hasRowLabels) {
+    rowLabels!.forEach((text, r) => {
+      if (!text || rowY[r] === undefined) return;
+      const box = {
+        x: PAD,
+        y: rowY[r] - 8 - LABEL_H,
+        w: advance(text, ROW_LABEL_SIZE),
+        h: LABEL_H,
+      };
+      rowTitles.push({ box, text });
+      labels.push(box);
+      obstacles.push(padBox(box, 6));
+    });
+  }
+
+  for (const route of routes) {
+    const text = route.arrow.label;
+    if (!text) continue;
+    route.labelBox = placeLabel(
+      route.segs[0],
+      text,
+      route.from,
+      obstacles,
+      labels,
+      baseWidth,
+      baseHeight,
+    );
+    labels.push(route.labelBox);
+    obstacles.push(padBox(route.labelBox, 6));
+  }
+
+  /* Grow the viewBox so a label can never fall outside the drawing. */
+  let width = baseWidth;
+  let height = baseHeight;
+  for (const box of labels) {
+    width = Math.max(width, box.x + box.w + PAD);
+    height = Math.max(height, box.y + box.h + PAD);
+  }
 
   const ariaLabel =
     `${label}. ` +
@@ -173,22 +425,35 @@ function Flow({
 
   return (
     <Frame label={label}>
-      <Canvas width={width} height={height} ariaLabel={ariaLabel}>
+      <Canvas width={width} height={height} ariaLabel={ariaLabel} dataKind="flow">
         {boundary && boundaryX !== null ? (
-          <BoundaryLine boundary={boundary} x={boundaryX} height={height} />
+          <BoundaryLine
+            boundary={boundary}
+            x={boundaryX}
+            top={rowY[0]}
+            height={height}
+          />
         ) : null}
 
-        {arrows
-          .filter((arrow) => rects.has(arrow.from) && rects.has(arrow.to))
-          .map((arrow, index) => (
-            <Arrow
-              key={`${arrow.from}-${arrow.to}-${index}`}
-              arrow={arrow}
-              from={rects.get(arrow.from)!}
-              to={rects.get(arrow.to)!}
-              boundaryX={boundaryX}
-            />
-          ))}
+        {rowTitles.map((title, index) => (
+          <text
+            key={index}
+            data-row-label
+            x={title.box.x}
+            y={title.box.y + 9}
+            className="font-mono text-[8.5px] tracking-[0.08em] uppercase"
+            fill="var(--color-ink-faint)"
+          >
+            {title.text}
+          </text>
+        ))}
+
+        {routes.map((route, index) => (
+          <Arrow
+            key={`${route.arrow.from}-${route.arrow.to}-${index}`}
+            route={route}
+          />
+        ))}
 
         {nodes.map((node) => (
           <NodeBox key={node.id} node={node} rect={rects.get(node.id)!} />
@@ -202,24 +467,29 @@ function Flow({
 function BoundaryLine({
   boundary,
   x,
+  top,
   height,
 }: {
   boundary: DiagramBoundary;
   x: number;
+  /** Top of the first row, so the rule starts just above the boxes. */
+  top: number;
   height: number;
 }) {
   return (
     <g>
       <line
+        data-boundary-line
         x1={x}
-        y1={12}
+        y1={top - 4}
         x2={x}
-        y2={height - 22}
+        y2={height - 20}
         stroke="var(--color-rule-strong)"
         strokeWidth="1"
         strokeDasharray="3 3"
       />
       <text
+        data-boundary-label
         x={x}
         y={height - 8}
         textAnchor="middle"
@@ -233,106 +503,52 @@ function BoundaryLine({
 }
 
 function Arrow({
-  arrow,
-  from,
-  to,
-  boundaryX,
+  route,
 }: {
-  arrow: DiagramArrow;
-  from: Rect;
-  to: Rect;
-  boundaryX: number | null;
+  route: { arrow: DiagramArrow; segs: Seg[]; labelBox: Box | null };
 }) {
+  const { arrow, segs, labelBox } = route;
   const tone: Tone = arrow.tone ?? (arrow.blocked ? "bad" : "plain");
   const stroke = STROKE_TONE[tone];
-
-  const perp = perpendicular(from, to);
-  const offset = (arrow.lane ?? 0) * LANE_STEP;
-  const startEdge = edgePoint(from, to);
-  const endEdge = edgePoint(to, from);
-  const start: Pt = {
-    x: startEdge.x + perp.x * offset,
-    y: startEdge.y + perp.y * offset,
-  };
-  let end: Pt = {
-    x: endEdge.x + perp.x * offset,
-    y: endEdge.y + perp.y * offset,
-  };
-
-  /* A blocked arrow that crosses a boundary stops at the line, not the box. */
-  if (arrow.blocked && boundaryX !== null) {
-    const minX = Math.min(start.x, end.x);
-    const maxX = Math.max(start.x, end.x);
-    if (boundaryX > minX && boundaryX < maxX && end.x !== start.x) {
-      const t = (boundaryX - start.x) / (end.x - start.x);
-      end = { x: boundaryX, y: start.y + (end.y - start.y) * t };
-    }
-  }
-
-  /*
-    A label never sits over a box. Between two boxes on the same row the gap is
-    only wide enough for a short word, so labels go above the row — or below it,
-    for the return half of a pair, which keeps the two readings apart. On any
-    other line there is room beside the stroke, so the label rides next to it.
-  */
-  const horizontal = Math.abs(from.cy - to.cy) < 1;
-  const lane = arrow.lane ?? 0;
-  const mid: Pt = horizontal
-    ? {
-        x: (start.x + end.x) / 2,
-        y: lane > 0 ? from.y + BOX_H + 12 : from.y - 7,
-      }
-    : (() => {
-        /* A blocked arrow reads from the side it came from, before the bar. */
-        const side = arrow.blocked ? -13 : 13;
-        return {
-          x: (start.x + end.x) / 2 + perp.x * side,
-          y: (start.y + end.y) / 2 + perp.y * side,
-        };
-      })();
-
-  const maskWidth = arrow.label ? arrow.label.length * LABEL_CHAR + 8 : 0;
+  const first = segs[0];
+  const last = segs[segs.length - 1];
 
   return (
-    <g>
-      <line
-        x1={start.x}
-        y1={start.y}
-        x2={end.x}
-        y2={end.y}
-        stroke={stroke}
-        strokeWidth="1"
-        strokeDasharray={arrow.blocked ? "3 3" : undefined}
-      />
+    <g data-arrow={`${arrow.from}->${arrow.to}`}>
+      {segs.map((seg, index) => (
+        <line
+          key={index}
+          data-arrow-seg
+          x1={seg.a.x}
+          y1={seg.a.y}
+          x2={seg.b.x}
+          y2={seg.b.y}
+          stroke={stroke}
+          strokeWidth="1"
+          strokeDasharray={arrow.blocked ? "3 3" : undefined}
+        />
+      ))}
 
       {arrow.blocked ? (
-        <StopBar at={end} from={start} stroke={stroke} />
+        <StopBar at={last.b} from={last.a} stroke={stroke} />
       ) : (
-        <ArrowHead tip={end} from={start} stroke={stroke} />
+        <ArrowHead tip={last.b} from={last.a} stroke={stroke} />
       )}
       {arrow.both && !arrow.blocked ? (
-        <ArrowHead tip={start} from={end} stroke={stroke} />
+        <ArrowHead tip={first.a} from={first.b} stroke={stroke} />
       ) : null}
 
-      {arrow.label ? (
-        <>
-          <rect
-            x={mid.x - maskWidth / 2}
-            y={mid.y - 9}
-            width={maskWidth}
-            height={11}
-            fill="var(--color-paper)"
-          />
-          <text
-            x={mid.x}
-            y={mid.y}
-            textAnchor="middle"
-            className="font-mono text-[9.5px]"
-            fill={TEXT_TONE[tone]}
-          >
-            {arrow.label}
-          </text>
-        </>
+      {arrow.label && labelBox ? (
+        <text
+          data-arrow-label
+          x={labelBox.x + labelBox.w / 2}
+          y={labelBox.y + 9}
+          textAnchor="middle"
+          className="font-mono text-[9.5px]"
+          fill={TEXT_TONE[tone]}
+        >
+          {arrow.label}
+        </text>
       ) : null}
     </g>
   );
@@ -352,6 +568,7 @@ function ArrowHead({ tip, from, stroke }: { tip: Pt; from: Pt; stroke: string })
   };
   return (
     <path
+      data-arrow-head
       d={`M ${a.x} ${a.y} L ${tip.x} ${tip.y} L ${b.x} ${b.y}`}
       fill="none"
       stroke={stroke}
@@ -367,6 +584,7 @@ function StopBar({ at, from, stroke }: { at: Pt; from: Pt; stroke: string }) {
   const ny = Math.cos(angle) * 6;
   return (
     <line
+      data-arrow-stop
       x1={at.x - nx}
       y1={at.y - ny}
       x2={at.x + nx}
@@ -379,9 +597,18 @@ function StopBar({ at, from, stroke }: { at: Pt; from: Pt; stroke: string }) {
 
 function NodeBox({ node, rect }: { node: DiagramNode; rect: Rect }) {
   const stroke = STROKE_TONE[node.tone ?? "plain"];
+  /*
+    A locked node reserves its top-right corner: the text is centred in the
+    space left of the lock, so the badge can never sit on a line of text.
+  */
+  const contentW = rect.w - TEXT_PAD * 2 - (node.lock ? LOCK_SLOT : 0);
+  const textX = rect.x + TEXT_PAD + contentW / 2;
+  const lockX = rect.x + rect.w - LOCK_SLOT + 6;
+
   return (
-    <g>
+    <g data-node={node.id}>
       <rect
+        data-node-rect
         x={rect.x}
         y={rect.y}
         width={rect.w}
@@ -392,7 +619,8 @@ function NodeBox({ node, rect }: { node: DiagramNode; rect: Rect }) {
         strokeDasharray={node.hollow ? "3 3" : undefined}
       />
       <text
-        x={rect.cx}
+        data-node-text
+        x={textX}
         y={node.sub ? rect.cy : rect.cy + 3.5}
         textAnchor="middle"
         className="font-mono text-[10px]"
@@ -402,7 +630,8 @@ function NodeBox({ node, rect }: { node: DiagramNode; rect: Rect }) {
       </text>
       {node.sub ? (
         <text
-          x={rect.cx}
+          data-node-text
+          x={textX}
           y={rect.cy + 13}
           textAnchor="middle"
           className="font-mono text-[8.5px]"
@@ -412,10 +641,10 @@ function NodeBox({ node, rect }: { node: DiagramNode; rect: Rect }) {
         </text>
       ) : null}
       {node.lock ? (
-        <g stroke="var(--color-ink-faint)" strokeWidth="1" fill="none">
-          <rect x={rect.x + rect.w - 17} y={rect.y + 9} width={7} height={5.5} />
+        <g data-node-lock stroke="var(--color-ink-faint)" strokeWidth="1" fill="none">
+          <rect x={lockX} y={rect.y + 9} width={7} height={5.5} />
           <path
-            d={`M ${rect.x + rect.w - 15.25} ${rect.y + 9} v-1.5 a1.75 1.75 0 0 1 3.5 0 V ${rect.y + 9}`}
+            d={`M ${lockX + 1.75} ${rect.y + 9} v-1.5 a1.75 1.75 0 0 1 3.5 0 V ${rect.y + 9}`}
           />
         </g>
       ) : null}
@@ -458,7 +687,7 @@ function Timeline({
 
   return (
     <Frame label={label}>
-      <Canvas width={TL_W} height={TL_H} ariaLabel={ariaLabel}>
+      <Canvas width={TL_W} height={TL_H} ariaLabel={ariaLabel} dataKind="timeline">
         {/* The window the counter is measured over. */}
         <path
           d={`M ${TL_FIRST_X} 52 V 42 H ${lastX} V 52`}

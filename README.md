@@ -10,11 +10,20 @@ Frontend only for now. Everything on the site is simulated in the browser.
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
-npm run typecheck  # next typegen && tsc --noEmit
-npm run build      # production build
+npm run dev              # http://localhost:3000
+npm run typecheck        # next typegen && tsc --noEmit
+npm run build            # production build
 npm run lint
+npm run check:diagrams   # headless-Chrome geometry check for every diagram
 ```
+
+`check:diagrams` renders every schematic in a real browser, reads the geometry
+of each label, box and arrow, and fails if text overflows a node, a label
+overlaps another label, a node or an arrow, an arrow turns diagonal, or anything
+falls outside the viewBox. It runs at 1280px and 375px and writes a PNG of each
+diagram to `diagram-shots/` (ignored by git) so the drawing can be eyeballed
+too. It reuses a running `next dev` server if there is one and starts its own if
+not; it needs Node 22+ and a local Chrome (override with `CHROME_PATH`).
 
 Requires Node 20+. Built against Next.js 16 (App Router), React 19, Tailwind CSS
 v4 and Framer Motion.

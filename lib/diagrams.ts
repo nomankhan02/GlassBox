@@ -92,5 +92,16 @@ export type Diagram =
       nodes: DiagramNode[];
       arrows: DiagramArrow[];
       boundary?: DiagramBoundary;
+      /**
+       * Small titles above each grid row, indexed by `row`. Used where two
+       * rows would otherwise read as one, so each row's labels stay attached
+       * to the boxes they describe.
+       */
+      rowLabels?: string[];
+      /**
+       * Vertical distance between rows, in user units. Overrides the default
+       * when a diagram needs more air between rows than the shared value.
+       */
+      rowGap?: number;
       note?: string;
     };
