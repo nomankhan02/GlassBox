@@ -118,6 +118,86 @@ export const BUILD_LOG: LogEntry[] = [
     lesson:
       "A demo teaches a mechanism only if the state is visible and the reader can move it. If the state sits behind an animation, the reader learns the animation.",
   },
+  {
+    id: "0003",
+    date: "2026-09-26",
+    dateLabel: "26 Sep 2026",
+    title: "Specifying visual intent precisely",
+    context:
+      "The second pass, once the shell and the first demo were done. The site read as wall-to-wall prose: explanations with nothing to look at, and every number set in the same face as the sentences around it.",
+    prompt:
+      "More content with specific figures and visual presentation after texts too, not just plain text everywhere. And a different number font, something distinct.",
+    promptNote:
+      "Both asks named an outcome rather than a specification. A figure is a category of object; it does not say which figure, or what any of them should show.",
+    faults: [
+      {
+        source: "prompt",
+        text: "\"Visual presentation\" and \"figures\" were ambiguous enough that the safest interpretation won. The build produced a single hairline-and-text divider component and reused it across every concept, which is presentation, and is not a figure. The real intent, structural diagrams showing the shape of each mechanism, only surfaced after a follow-up clarified it.",
+      },
+      {
+        source: "prompt",
+        text: "\"A different number font, something distinct\" was vague in the same way. The fix technically applied, a monospace face with a heavier weight and added letter-spacing, and read as nearly unchanged, because no specific typeface had been named.",
+      },
+    ],
+    correction: [
+      "The next prompt named an exact typeface, Martian Mono, instead of a category such as \"monospace\".",
+      "The same prompt spelled out concrete diagram content per concept: the boxes, the arrows, and what each one should depict.",
+    ],
+    lesson:
+      "Precision in the ask, not more iteration on the same ask, fixed both.",
+  },
+  {
+    id: "0004",
+    date: "2026-09-27",
+    dateLabel: "27 Sep 2026",
+    title: "Generalizing the diagram system, and two bugs that came with it",
+    context:
+      "One diagram existed and worked. This pass was about proving it was a system rather than a one-off: the same construction, applied ten times, without each concept reinventing it.",
+    prompt:
+      "Take the rate-limiting diagram and turn it into a reusable system, then apply it to the remaining nine concepts.",
+    promptNote:
+      "The one working diagram was the whole specification. Nothing in the prompt said what made it reusable, so two faults arrived underneath the same request.",
+    faults: [
+      {
+        source: "output",
+        text: "Diagram labels shrank along with the whole diagram on narrow viewports. Measured in headless Chrome at 320, 360 and 414 pixels, the labels fell to 5.0, 5.6 and 6.5 pixels, which is unreadable. Fixed by keeping diagrams at their authored size and making the container scroll horizontally instead of shrinking.",
+      },
+      {
+        source: "defaults",
+        text: "A shared, module-level regex with a global flag was reused across every call to the figure-parsing function. A global regex in JavaScript carries hidden position state between uses, so finishing one concept's text could leave the search partway through the next one, and figures intermittently failed to parse. Fixed by creating a fresh regex per call instead of reusing one.",
+      },
+    ],
+    correction: [
+      "A Canvas wrapper pattern, an overflow-x-auto container around a fixed-size SVG, is now used by every diagram.",
+      "The figure-parsing regex is created fresh on each call rather than shared at module scope.",
+    ],
+    lesson:
+      "A fix verified by measuring actual rendered pixels, not by reasoning about whether it should work.",
+  },
+  {
+    id: "0005",
+    date: "2026-09-28",
+    dateLabel: "28 Sep 2026",
+    title: "Diagrams that were geometrically correct and still wrong",
+    context:
+      "The diagram system was proven, so the remaining diagrams were built in a single batch. Nine at once, from a template that had only ever been exercised once.",
+    prompt:
+      "Build the nine new diagrams reusing the proven system, in one batch.",
+    promptNote:
+      "A batch is efficient and it hides the checking. Nothing in the request said how the output would be verified, so it was verified by looking.",
+    faults: [
+      {
+        source: "output",
+        text: "Several diagrams had real layout problems that were only visible when rendered: a label overflowing its box (1.03), two rows sitting too close to read as separate (1.05), a label landing on its own arrow (1.06), a diagonal arrow and a colliding label (1.08), and an icon overlapping a title (1.09). All of them were caught by eye, not by any check, because the tool that built them has no way to see its own rendered output.",
+      },
+    ],
+    correction: [
+      "Five diagrams were fixed by hand, each against the specific collision above.",
+      "A script was added that renders every diagram, measures every label and arrow with getBoundingClientRect, and fails the build if anything overlaps or overflows. This class of bug is now caught automatically rather than by a person scrolling through screenshots.",
+    ],
+    lesson:
+      "Correct geometry on paper and a correct render are two different claims. Only one of them can be checked without looking.",
+  },
 ];
 
 /**
