@@ -198,6 +198,65 @@ export const BUILD_LOG: LogEntry[] = [
     lesson:
       "Correct geometry on paper and a correct render are two different claims. Only one of them can be checked without looking.",
   },
+  {
+    id: "0006",
+    date: "2026-10-03",
+    dateLabel: "3 Oct 2026",
+    title: "Password hashing, built before the sign-in flow it was waiting for",
+    context:
+      "1.06 was the clearest case of a queued demo: the mechanism is core to everything the site is about, and the entry had been written and left with nothing to click because the plan said it needed a real sign-in flow to point at.",
+    prompt:
+      "Build the password hashing demo for 1.06 as a fully simulated, no-backend demo, the way the rate-limiting demo is, rather than waiting on a real sign-in flow. Three steps: store a password and show plaintext versus salted hash side by side; simulate a database leak, with a salt on/off toggle over two accounts that chose the same password; then log in and walk the server's steps in order, take the attempt, add the stored salt, hash it, compare, match or no match. Compute real hashes in the browser with the Web Crypto API and a random salt, no hardcoded strings. Use SHA-256 so the step is watchable, and say on screen that real apps use a deliberately slow algorithm such as bcrypt or argon2 instead. Nothing typed leaves the browser. Follow the rate-limiting pattern exactly.",
+    promptNote:
+      "The override is the first sentence, and it is the part worth logging: the queue had a reason, and the reason was wrong.",
+    faults: [
+      {
+        source: "defaults",
+        text: "The plan on file said this demo had to wait for a real sign-in flow. That is the conventional order — build the infrastructure, then demonstrate it — and it would have left 1.06 with an explanation and no demo indefinitely. The rate-limiting precedent says the opposite: model the mechanism in the browser with real computation, and let the real flow come later, or never.",
+      },
+      {
+        source: "defaults",
+        text: "Hashing most often means bcrypt or argon2, and neither exists in the browser's Web Crypto API. Reaching for the real algorithm means a dependency or an unreadable black box; quietly reaching for SHA-256 instead teaches the wrong one. Either default is wrong on its own, and the prompt had to name both the watchable algorithm and why it is not what real apps use.",
+      },
+    ],
+    correction: [
+      "The demo was built simulated, matching rate-limiting: real Web Crypto hashing in the tab, visibly labelled as not a real sign-up, with the no-network, no-storage and no-logging guarantees stated rather than assumed.",
+      "SHA-256 runs the demo and is named on screen, with a standing note that real apps use a deliberately slow, salted algorithm and tune its cost so every guess costs the attacker.",
+      "Hashes and salts wrap inside their cells and the layout holds at 320px, so the 64-character strings cannot overflow the way the diagrams did.",
+      "The queued item that deferred this demo was removed from the record and replaced by this entry, so the override is visible rather than silent.",
+    ],
+    lesson:
+      "A mechanism demo does not need the infrastructure the mechanism lives in; it needs the mechanism. Waiting for a real sign-in flow to demonstrate hashing is the same mistake as waiting for a real server to demonstrate rate limiting.",
+  },
+  {
+    id: "0007",
+    date: "2026-10-03",
+    dateLabel: "3 Oct 2026",
+    title: "Authentication and authorization, drawn as the two gates it is",
+    context:
+      "1.04's diagram already had the right shape: a request, gate 1, gate 2, the record. The demo's job was to make that drawing move without becoming a different component sitting beside it.",
+    prompt:
+      "Build the authentication versus authorization demo for 1.04, reusing the two-gate shape from the existing diagram as its visual base, so it reads as that diagram coming alive. Fix the target as record #42, owned by Alex, and give an identity selector with four options: not signed in, signed in as Alex, signed in as Jordan, and signed in as an admin. On Send request, move the request through both gates in order, each resolving before the next, ending in 401, 403 or 200 depending on the identity: not signed in stops at gate 1; Jordan passes gate 1 and stops at gate 2; Alex and an admin pass both. State the admin rule on screen as a policy rather than a hidden bypass. End every run with one line naming which gate decided the outcome and why. Follow the rate-limiting pattern exactly, keep it keyboard accessible, and announce results with aria-live.",
+    promptNote:
+      "A permissions demo usually means a roles-and-permissions matrix. This one had a diagram to answer to, and the diagram knew the shape the matrix does not show: two checks, in order, on one request.",
+    faults: [
+      {
+        source: "defaults",
+        text: "The familiar way to grant an admin access is a short condition in the middle of the authorization check. It is functionally correct and invisible: nothing on the page tells the reader the rule exists, which is precisely the failure this concept warns about. A permission that only lives in code is a permission nobody can review.",
+      },
+      {
+        source: "output",
+        text: "The first pass resolved the gates as one state change, so the request appeared to arrive at both at once and the ordering the concept depends on was asserted in the copy rather than shown on screen. The gates had to resolve one at a time, each visibly finishing before the next was considered.",
+      },
+    ],
+    correction: [
+      "The admin rule was printed on the page as a stated policy, above the gates, rather than left as a branch inside the check. The demo shows the rule being applied, not a hidden shortcut.",
+      "Each gate now resolves on its own step, in order, with the node it is about to enter marked active first; a request that stops keeps the gate it failed at, and the outcome line names that gate and the reason.",
+      "The record contents stay withheld until both gates have opened, so the difference between passing gate 1 and passing both is something the reader sees rather than reads.",
+    ],
+    lesson:
+      "The second gate is the one that gets left out, and a missing check is invisible from the outside. The demo has to make the two gates visibly separate, because knowing who you are and being allowed to act are not the same thing.",
+  },
 ];
 
 /**
@@ -216,11 +275,6 @@ export const QUEUED: { label: string; where: string; note: string }[] = [
     note: "The rotate-don't-rewrite decision belongs with the git step.",
   },
   {
-    label: "Hashed passwords",
-    where: "Layer 1, concept 1.06",
-    note: "Its own demo, written when a real sign-in flow exists to point at.",
-  },
-  {
     label: "Rate-limited sign-in",
     where: "Layer 1, concept 1.07",
     note: "The demo already models the mechanism. Point it at a real endpoint and key it by account as well as IP.",
@@ -228,7 +282,7 @@ export const QUEUED: { label: string; where: string; note: string }[] = [
   {
     label: "Server-side authorization and row-level security",
     where: "Layer 1, concepts 1.03 and 1.04",
-    note: "Needs a database and real user records to demonstrate honestly.",
+    note: "The demo models both gates in the browser. Point them at real records and enforce them on the server.",
   },
   {
     label: "Input validation",

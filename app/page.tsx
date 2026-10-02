@@ -19,7 +19,7 @@ export default function Home() {
     { label: "layer 00 · getting started", value: `${STEPS.length} steps` },
     {
       label: "layer 01 · concepts",
-      value: `${CONCEPTS.length} concepts · ${demosBuilt} demo built`,
+      value: `${CONCEPTS.length} concepts · ${demosBuilt} demos live`,
     },
     { label: "layer 02 · build log", value: `${BUILD_LOG.length} entries` },
     { label: "backend", value: "none yet · all state simulated in the browser" },
@@ -97,9 +97,11 @@ export default function Home() {
         <h2 className="type-section">Where this is up to</h2>
         <p className="mt-3 max-w-[68ch] text-ink-soft">
           Stated plainly, because a site about how things actually work should
-          not be vague about its own state. One interactive demo is built so
-          far. It is the proof of concept for every demo that follows, and it is
-          worth opening first if you only have two minutes.
+          not be vague about its own state. Three interactive demos are built
+          so far: rate limiting (1.07), password hashing (1.06), and
+          authentication versus authorization (1.04). Each one is the model for
+          the demos that follow, and any of them is worth opening first if you
+          only have two minutes.
         </p>
 
         <dl className="mt-6 border-t border-rule">
@@ -135,7 +137,7 @@ export default function Home() {
             "response returns",
             "page updates",
           ]}
-          note="Ten mechanisms sit along this path. 1.07 is the one built to watch happen live."
+          note="Ten mechanisms sit along this path. Three are built to watch happen live: 1.04, 1.06 and 1.07."
         />
 
         <p className="mt-4 font-mono text-[11px] text-ink-faint">

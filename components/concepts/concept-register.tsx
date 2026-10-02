@@ -12,6 +12,8 @@ import { Break } from "@/components/site/break";
 import { Diagram } from "@/components/site/diagram";
 import { Prose } from "@/components/site/prose";
 import { RateLimitFigure } from "./rate-limit-figure";
+import { PasswordHashFigure } from "./password-hash-figure";
+import { AuthzFigure } from "./authz-figure";
 import { PlannedDemo } from "./planned-demo";
 
 /*
@@ -43,6 +45,18 @@ export function ConceptRegister() {
   return <RegisterList items={items} />;
 }
 
+/**
+  One case per built demo, keyed by the concept's `demoId`. A concept with no
+  matching entry falls back to the placeholder, so adding a demo is a matter of
+  adding it here and setting the id on the concept.
+*/
+function ConceptDemo({ demoId }: { demoId: string }) {
+  if (demoId === "rate-limiting") return <RateLimitFigure />;
+  if (demoId === "password-hashing") return <PasswordHashFigure />;
+  if (demoId === "authn-authz") return <AuthzFigure />;
+  return null;
+}
+
 function ConceptPanel({ concept }: { concept: Concept }) {
   const related = concept.related ? getConcept(concept.related) : undefined;
 
@@ -68,8 +82,8 @@ function ConceptPanel({ concept }: { concept: Concept }) {
 
       <PromptFragment>{concept.tell}</PromptFragment>
 
-      {concept.demoId === "rate-limiting" ? (
-        <RateLimitFigure />
+      {concept.demoId ? (
+        <ConceptDemo demoId={concept.demoId} />
       ) : (
         <PlannedDemo code={concept.code} note={concept.demoNote} />
       )}

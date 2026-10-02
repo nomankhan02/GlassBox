@@ -37,7 +37,7 @@ surface a visitor looks at.
 | ------------------ | ----- | --------------------------------------------------- |
 | `/`                | —     | Purpose, reading order, current build status         |
 | `/getting-started` | 00    | The bench: setup before the first prompt             |
-| `/concepts`        | 01    | The mechanism: ten concepts, one demo built so far   |
+| `/concepts`        | 01    | The mechanism: ten concepts, three demos built       |
 | `/build-log`       | 02    | The record: prompts, faults, corrections             |
 
 ```text
@@ -51,7 +51,7 @@ app/
   icon.svg                the mark, drawn
 components/
   site/                   shell and register primitives (shared)
-  concepts/               concept register and the rate limiting demo
+  concepts/               concept register and the demos
   steps/                  the layer 0 register
 lib/
   layers.ts               layer definitions, used by the rail and the index
@@ -109,11 +109,15 @@ because the mechanism is genuinely there when you open it.
 
 ## Demos
 
-Demos are figures, numbered and captioned, in `components/concepts/`. One is
+Demos are figures, numbered and captioned, in `components/concepts/`. Three are
 built: `rate-limit-demo.tsx`, a fixed-window limiter of five requests per ten
-seconds, keyed by identity.
+seconds, keyed by identity; `password-hash-demo.tsx`, which hashes with the Web
+Crypto API to show salted and unsalted storage, a leak, and a log-in check; and
+`authz-demo.tsx`, which runs a request through authentication and then
+authorization against one record.
 
-It is the model for the rest, so it holds to four rules:
+The rate-limiting demo is the model for the rest, so all three hold to four
+rules:
 
 1. The state that decides the outcome is on screen, not implied.
 2. The reader moves it, so nothing auto-plays and nothing is over before you have

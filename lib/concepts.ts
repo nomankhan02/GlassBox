@@ -257,7 +257,7 @@ export const CONCEPTS: Concept[] = [
     },
     tell: "Sign-in only answers who the user is. Every read and write then re-checks whether this user may touch this specific record, on the server, on every request. Do not rely on the UI hiding anything.",
     marginalia: "signed in is not the same as allowed",
-    demoId: null,
+    demoId: "authn-authz",
     demoNote:
       "Two accounts and one record: where the permission check has to sit for the rule to hold.",
   },
@@ -388,7 +388,7 @@ export const CONCEPTS: Concept[] = [
     },
     tell: "Never store the password itself. Hash it with a salted, slow algorithm such as bcrypt or argon2, verify with a constant-time comparison, and never write a password to a log.",
     marginalia: "slow on purpose, so guessing stops paying for itself",
-    demoId: null,
+    demoId: "password-hashing",
     demoNote:
       "Type a password and watch what gets stored: same input, different salt, and no route back.",
   },
