@@ -1,4 +1,5 @@
 # Glassbox
+# Glassbox-site
 
 A site that teaches how AI-assisted web apps actually work underneath: not a
 coding tutorial, and no code walkthroughs. Concepts and decisions, taught through
