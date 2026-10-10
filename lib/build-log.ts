@@ -257,6 +257,71 @@ export const BUILD_LOG: LogEntry[] = [
     lesson:
       "The second gate is the one that gets left out, and a missing check is invisible from the outside. The demo has to make the two gates visibly separate, because knowing who you are and being allowed to act are not the same thing.",
   },
+  {
+    id: "0008",
+    date: "2026-10-10",
+    dateLabel: "10 Oct 2026",
+    title: "Sessions versus tokens, and the demo that had to admit it could not revoke a token",
+    context:
+      "1.05's diagram already had the right shape: two rows, state on the server in one and on the client in the other. The demo's job was to make both stores visible at once and to show the one thing that differs in practice — what a logout can actually do.",
+    prompt:
+      "Build the sessions versus tokens demo for 1.05, reusing the existing two-row diagram shape: the session row where the client holds a random id and the server holds state, the token row where the client holds the claims and the server holds nothing. A mode toggle, Session or Token. A Log in button: session mode adds a visible row to a small 'server-side sessions' table and gives the client just that id; token mode gives the client a signed token containing the claims directly, and explicitly shows the server-side table staying empty so the contrast is visible. A Make a request button that looks the id up in the table in session mode, and in token mode checks the token's signature and reads the claims directly, no lookup. Then Revoke this login: session mode removes the row and a following request fails immediately; token mode must not pretend to work — show plainly that there is nothing stored server-side to delete, so the token stays valid until it expires on its own, with a visible expiry countdown. Click-driven only, nothing autoplays, ids and tokens in the mono face, keyboard accessible, results announced via aria-live, nothing overflowing at 320px.",
+    promptNote:
+      "The refusal is the part worth logging: the prompt names the uncomfortable truth and forbids softening it. Everything else follows from that one constraint.",
+    faults: [
+      {
+        source: "prompt",
+        text: "The prompt asked for a visible expiry countdown but never said what a token's lifetime should be or whether the reader may skip ahead. Taken literally, the countdown runs on real time: either the reader sits and waits out a realistic 15 to 60 minutes, or a demo-sized number is invented silently. Measuring the mechanism, not the wall clock, is a decision that belongs in the prompt.",
+      },
+      {
+        source: "defaults",
+        text: "The familiar token demo is a hand-written string with a step labelled 'verify the signature' that verifies nothing. It looks like the mechanism and is a caption on a random value. Making the signature real — an HMAC-SHA256 over the header and payload, recomputed and compared on every request — is what lets the check actually fail, and it is not what you get by default.",
+      },
+    ],
+    correction: [
+      "The token is really signed in the tab with the Web Crypto API, and the request path genuinely recomputes the signature and compares it. The page says the signing key would live on the server in a real app.",
+      "The demo token's lifetime is short and the clock is a simulation control: Advance the clock 30 s moves time past the exp claim, so expiry can be watched rather than waited out. The copy names the realistic lifetime separately.",
+      "Switching mode resets the run, so the sessions table in token mode is unambiguously empty and the log-in visibly adds nothing to it. The empty table is the contrast, so it is shown rather than described.",
+      "Revoke in token mode does not animate a success. It says it did nothing, flashes the still-empty table, and points at the countdown as the only lever that exists.",
+      "A session is still refused instantly after the row is deleted, with the client's cookie deliberately left unchanged, so the failure is visibly the server's lookup and not the client's error.",
+    ],
+    lesson:
+      "If a mechanism has an honest weakness, the demo has to show the weakness, not route around it. A token cannot be revoked early, and the moment the demo fakes a working revoke it stops teaching the trade and starts teaching the wrong thing.",
+  },
+  {
+    id: "0009",
+    date: "2026-10-10",
+    dateLabel: "10 Oct 2026",
+    title: "CORS, and refusing to draw the red X",
+    context:
+      "1.08's diagram was already honest — the server answers both requests and the browser refuses one of them. The demo had to keep that shape against the pull of the familiar error message, which is the single most misleading thing about CORS.",
+    prompt:
+      "Build the CORS demo for 1.08, reusing the existing two-origin diagram shape. An origin selector, yourdomain.com or attacker-site.com, and a server-config toggle, Allow-Origin: yourdomain.com or Allow-Origin: *. A Send request button. Teach the nuance precisely: the request always actually reaches the server, and the server always actually responds, whatever the origin. What differs is whether the browser lets the page's own script read that response. Specific allow-origin plus the allowed caller renders the data. Specific allow-origin plus the other origin shows the response visibly arriving but the page blocked from reading it — a blocked-by-CORS message instead of the data, not a bare red X. The wildcard shows the other origin successfully reading the response too, demonstrating concretely why Allow-Origin: * removes the protection rather than fixing an error. Click-driven only, keyboard accessible, results announced via aria-live, nothing overflowing at 320px.",
+    promptNote:
+      "The last sentence is the whole demo. A CORS demo that renders a blocked request as a failure would be technically consistent with the console and wrong about everything the concept is trying to say.",
+    faults: [
+      {
+        source: "defaults",
+        text: "The default is a failing call drawn as a red error with no response attached, because that is what the console shows. It teaches that the server refused, which is false: the request reached the server and the server answered with a 200. The red X is the symptom and the opposite of the cause.",
+      },
+      {
+        source: "output",
+        text: "The first pass resolved the request, the server's answer and the browser's decision as one state change, so a blocked request looked identical to a request that never arrived. Nothing on screen said the response had come back. It had to resolve in order, with the server's response filled in on every run before the read is decided.",
+      },
+      {
+        source: "defaults",
+        text: "Rendering the wildcard as the fix is the reflex: the error goes away, so it reads as solved, and the panel turns green like every other success. That framing is the vulnerability. The wildcard has to read as protection removed, so its success state cannot look like the allowed origin's success state without naming what was given up.",
+      },
+    ],
+    correction: [
+      "The result is two panels, not one. The left panel — the server's response, with the status and the Access-Control-Allow-Origin header — fills in on every run, whatever the origin, and says so. The right panel is what the page's script may read, and that is the only thing that varies.",
+      "A blocked read shows the response arriving and then a plain blocked-by-CORS message naming both origins and the header value, instead of the fields. There is no bare error mark anywhere.",
+      "The wildcard is shown succeeding for the other origin on purpose, with copy that calls it the protection removed rather than an error fixed, and a standing note that Allow-Origin: * is wrong for anything a signed-in visitor can see.",
+      "The server node carries the line that it has no idea CORS exists, so the reader never has to infer where the enforcement lives.",
+    ],
+    lesson:
+      "The browser is the enforcer, so a demo that draws a failed request as the server saying no has taught the exact inverse of the concept. Show the response arriving first; only then is it clear that what CORS withholds is the reading, not the answer.",
+  },
 ];
 
 /**

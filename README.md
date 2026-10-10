@@ -38,7 +38,7 @@ surface a visitor looks at.
 | ------------------ | ----- | --------------------------------------------------- |
 | `/`                | —     | Purpose, reading order, current build status         |
 | `/getting-started` | 00    | The bench: setup before the first prompt             |
-| `/concepts`        | 01    | The mechanism: ten concepts, three demos built       |
+| `/concepts`        | 01    | The mechanism: ten concepts, five demos built        |
 | `/build-log`       | 02    | The record: prompts, faults, corrections             |
 
 ```text
@@ -110,14 +110,17 @@ because the mechanism is genuinely there when you open it.
 
 ## Demos
 
-Demos are figures, numbered and captioned, in `components/concepts/`. Three are
+Demos are figures, numbered and captioned, in `components/concepts/`. Five are
 built: `rate-limit-demo.tsx`, a fixed-window limiter of five requests per ten
 seconds, keyed by identity; `password-hash-demo.tsx`, which hashes with the Web
-Crypto API to show salted and unsalted storage, a leak, and a log-in check; and
+Crypto API to show salted and unsalted storage, a leak, and a log-in check;
 `authz-demo.tsx`, which runs a request through authentication and then
-authorization against one record.
+authorization against one record; `sessions-token-demo.tsx`, which puts state on
+the server for a session and on the client for a token, then revokes one and
+cannot revoke the other; and `cors-demo.tsx`, where the request and the server's
+answer happen every time and only the browser's read decision differs.
 
-The rate-limiting demo is the model for the rest, so all three hold to four
+The rate-limiting demo is the model for the rest, so all five hold to four
 rules:
 
 1. The state that decides the outcome is on screen, not implied.

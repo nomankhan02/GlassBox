@@ -97,11 +97,11 @@ export default function Home() {
         <h2 className="type-section">Where this is up to</h2>
         <p className="mt-3 max-w-[68ch] text-ink-soft">
           Stated plainly, because a site about how things actually work should
-          not be vague about its own state. Three interactive demos are built
-          so far: rate limiting (1.07), password hashing (1.06), and
-          authentication versus authorization (1.04). Each one is the model for
-          the demos that follow, and any of them is worth opening first if you
-          only have two minutes.
+          not be vague about its own state. Five interactive demos are built so
+          far: authentication versus authorization (1.04), sessions versus
+          tokens (1.05), password hashing (1.06), rate limiting (1.07) and CORS
+          (1.08). Each one is the model for the demos that follow, and any of
+          them is worth opening first if you only have two minutes.
         </p>
 
         <dl className="mt-6 border-t border-rule">
@@ -137,7 +137,7 @@ export default function Home() {
             "response returns",
             "page updates",
           ]}
-          note="Ten mechanisms sit along this path. Three are built to watch happen live: 1.04, 1.06 and 1.07."
+          note="Ten mechanisms sit along this path. Five are built to watch happen live: 1.04, 1.05, 1.06, 1.07 and 1.08."
         />
 
         <p className="mt-4 font-mono text-[11px] text-ink-faint">

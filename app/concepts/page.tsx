@@ -38,7 +38,7 @@ export default function ConceptsPage() {
           until you know that a request is a round trip with a cost attached.
         </p>
         <p>
-          Every entry opens in place. Three are written up with a working demo
+          Every entry opens in place. Five are written up with a working demo
           so far, marked on the row, and the rest will be built one at a time
           rather than all at once. The demos that exist are the model for the
           others: state on screen, moved by clicking, explained as it changes.

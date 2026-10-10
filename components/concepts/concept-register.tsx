@@ -14,6 +14,8 @@ import { Prose } from "@/components/site/prose";
 import { RateLimitFigure } from "./rate-limit-figure";
 import { PasswordHashFigure } from "./password-hash-figure";
 import { AuthzFigure } from "./authz-figure";
+import { SessionsTokenFigure } from "./sessions-token-figure";
+import { CorsFigure } from "./cors-figure";
 import { PlannedDemo } from "./planned-demo";
 
 /*
@@ -54,6 +56,8 @@ function ConceptDemo({ demoId }: { demoId: string }) {
   if (demoId === "rate-limiting") return <RateLimitFigure />;
   if (demoId === "password-hashing") return <PasswordHashFigure />;
   if (demoId === "authn-authz") return <AuthzFigure />;
+  if (demoId === "sessions-tokens") return <SessionsTokenFigure />;
+  if (demoId === "cors") return <CorsFigure />;
   return null;
 }
 

@@ -325,9 +325,9 @@ export const CONCEPTS: Concept[] = [
     },
     tell: "Store sign-in state in an httpOnly, secure, sameSite cookie. No auth tokens in localStorage. Give credentials an expiry, and tell me how a user logs out of every device at once.",
     marginalia: "whoever holds the credential is you, as far as the server knows",
-    demoId: null,
+    demoId: "sessions-tokens",
     demoNote:
-      "Two tabs and one sign-out: what happens to a session and what happens to a token.",
+      "Two rows and one revoke: state on the server against state on the client, and what each one can undo.",
   },
   {
     id: "password-hashing",
@@ -503,9 +503,9 @@ export const CONCEPTS: Concept[] = [
     },
     tell: "Allow only the origins I actually use. No wildcard on anything authenticated. Explain which of my requests will trigger a preflight and why.",
     marginalia: "enforced by the browser, so it only guards browsers",
-    demoId: null,
+    demoId: "cors",
     demoNote:
-      "The same request from three different origins, and the preflight that decides which one gets an answer.",
+      "Two origins and one server: the response always arrives, and the browser decides whether the page may read it.",
   },
   {
     id: "secrets",
