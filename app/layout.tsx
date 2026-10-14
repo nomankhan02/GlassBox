@@ -1,33 +1,24 @@
 import type { Metadata } from "next";
 import {
-  Cinzel,
-  Fraunces,
+  Bricolage_Grotesque,
   IBM_Plex_Mono,
   IBM_Plex_Sans,
   Martian_Mono,
 } from "next/font/google";
-import { Masthead } from "@/components/site/masthead";
-import { LayerRail } from "@/components/site/layer-rail";
-import { Colophon } from "@/components/site/colophon";
 import "./globals.css";
 
 /*
-  Five jobs, five voices, one of them deliberately strange.
+  Four jobs, four voices.
 
-    Fraunces — headings only. A display serif with real character: its optical
-               size, SOFT and WONK axes let the letterforms tighten and splay
-               at page-title size like a printed specimen plate, and relax
-               back to something legible in the nav. It is the one face on the
-               site chosen to be noticed, and it only ever sets hierarchies,
-               never prose.
+    Bricolage Grotesque — headings, nav and the wordmark. One confident display
+               face, loaded as a variable weight, so the scale steps down by
+               weight and size together. It is the one face on the site chosen
+               to be noticed, and it only ever sets hierarchies, never prose.
     Plex Sans  — body. Meant for long explanatory prose at small sizes.
     Plex Mono  — labels, identifiers, units. The voice of the notebook.
     Martian Mono — numerals and readouts. The voice of the instrument:
                squarer, more mechanical digits than the text mono, so a counter
                reads as a measurement rather than as part of a sentence.
-    Cinzel     — the wordmark and nothing else. A capitals-only Roman
-               inscriptional serif, the one place on the site allowed to be
-               ornamental; it never sets a heading or a line of prose.
 */
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
@@ -35,16 +26,15 @@ const plexSans = IBM_Plex_Sans({
 });
 
 /*
-  The display face. All three extra axes are pulled in on purpose: opsz so the
-  same file serves a 46px page title and a 13px nav label, SOFT pinned to 0 and
-  WONK on so display sizes take the sharper, more mechanical cut rather than the
-  soft one. Weight reaches 100–900, which is what lets the scale step down by
-  weight and not only by size.
+  The display face, replacing the serif this site used to wear. Bricolage
+  Grotesque is a variable grotesque: its weight range lets one file serve a
+  heavy page title and a nav label without switching families. It sets
+  headings, the nav, and the wordmark — the whole display voice, where before
+  three faces competed for it.
 */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
   display: "swap",
 });
 
@@ -65,17 +55,6 @@ const martianMono = Martian_Mono({
   subsets: ["latin"],
 });
 
-/*
-  The wordmark face, and only the wordmark. Cinzel is a capitals-only Roman
-  inscriptional serif; it is the one ornamental, deliberately bold moment on the
-  site, and it is scoped to .type-wordmark so it cannot bleed anywhere else.
-*/
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  weight: ["400", "600", "700"],
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: {
     default: "Glassbox — how AI-built web apps actually work",
@@ -85,11 +64,18 @@ export const metadata: Metadata = {
     "A lab notebook for the parts of a web app you never see. Glassbox walks through the setup a project needs, the concepts behind the mechanism, and a running record of the prompts that built this site.",
 };
 
+/*
+  The root layout keeps only what every route needs: the document, the font
+  variables and the outer measure. The chrome differs by route — the homepage
+  opens on a full-height hero, the content pages wear the masthead-and-rail
+  frame — so each of those compositions lives in its own layout or page rather
+  than here.
+*/
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${plexSans.variable} ${fraunces.variable} ${plexMono.variable} ${martianMono.variable} ${cinzel.variable}`}
+      className={`${plexSans.variable} ${bricolage.variable} ${plexMono.variable} ${martianMono.variable}`}
     >
       <body>
         <a
@@ -99,22 +85,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
 
-        <div className="mx-auto w-full max-w-[1180px] px-5 md:px-8">
-          <Masthead />
-
-          <div className="lg:grid lg:grid-cols-[164px_minmax(0,1fr)] xl:grid-cols-[184px_minmax(0,1fr)]">
-            <LayerRail />
-            {/* The rule on this edge is the only vertical line on the site: it
-                separates the layer index from the layer's contents. */}
-            <main
-              id="content"
-              className="min-w-0 pt-8 pb-20 lg:border-l lg:border-rule lg:pt-12 lg:pl-10 xl:pl-14"
-            >
-              {children}
-            </main>
-          </div>
-
-          <Colophon />
+        {/* Tighter gutters than before, and a wider measure: the content sits
+            closer to the viewport edge on every screen, while the 14px on the
+            smallest phones keeps text off the literal edge. */}
+        <div className="mx-auto w-full max-w-[1280px] px-3.5 sm:px-5 md:px-6 lg:px-7">
+          {children}
         </div>
       </body>
     </html>

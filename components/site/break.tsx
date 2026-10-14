@@ -116,7 +116,7 @@ export function Break(props: Break) {
               {step}
             </span>
             {index < props.steps.length - 1 ? (
-              <span aria-hidden className="font-mono text-[11px] text-rule-strong">
+              <span aria-hidden className="font-mono text-[11px] text-ink-faint">
                 &rarr;
               </span>
             ) : null}

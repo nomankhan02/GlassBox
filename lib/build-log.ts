@@ -322,6 +322,56 @@ export const BUILD_LOG: LogEntry[] = [
     lesson:
       "The browser is the enforcer, so a demo that draws a failed request as the server saying no has taught the exact inverse of the concept. Show the response arriving first; only then is it clear that what CORS withholds is the reading, not the answer.",
   },
+  {
+    id: "0010",
+    date: "2026-10-14",
+    dateLabel: "14 Oct 2026",
+    title: "A glass cube, a hero, and a background that was never one colour",
+    context:
+      "A full visual redesign, in three dependent stages: build one reusable 3D glass cube and verify it on a phone, build the homepage hero out of it, then change the site-wide theme. The order was deliberate. The cube had to exist and be measured before anything was built on top of it, and the theme change had to come last so the hero could be tuned against the page it would actually sit on.",
+    prompt:
+      "We're doing a full visual redesign of the homepage hero and the site-wide theme. Build this in three stages, in order, and verify each before moving to the next. STAGE 1 — THE 3D GLASS CUBE COMPONENT (build and verify first, everything else depends on it) Build one reusable 3D glass cube component in pure CSS 3D transforms (perspective + transform-style: preserve-3d + rotateX/rotateY on six face divs — no Three.js, no WebGL, no new dependency). Each face should look like glass: a semi-transparent background, a light backdrop-filter blur, and a subtle border — not a flat solid cube. The component takes props for size and behavior, used in two configurations: Small, cursor-tracked: sits next to the GLASSBOX wordmark in the site header/nav, appears on every page. As the cursor moves near it, the cube subtly tilts to follow (map cursor position relative to the cube into a small, clamped rotateX/rotateY range — enough to read as “alive,” never enough to look broken or disorienting). Smooth and eased, not snapping. Huge, auto-rotating: a slow continuous rotation, roughly one full turn every 20–30 seconds, used only in the homepage hero (stage 2). Both must respect prefers-reduced-motion exactly the way the existing panel-open animations already do in this codebase: the small cube holds a neutral angle instead of tracking the cursor, and the huge one holds still instead of rotating. Test this component's performance on a mid-range mobile viewport before moving on. If the blur causes visible jank, simplify it (less blur radius, or a lighter box-shadow standing in for glass) rather than shipping something that stutters. STAGE 2 — NEW HOMEPAGE HERO Restructure the homepage: the first full-height viewport shows only the GLASSBOX wordmark at the top and the huge rotating cube centered in the middle — nothing else. Set the cube's opacity low enough to read as a background presence, not a focal object (start around 6–8%, adjust after an actual visual check — this needs real eyes on it, not a number guessed in advance). It must never block clicks on anything behind it (pointer-events: none). The wordmark stays clearly legible over it at all times. Everything currently on the homepage continues directly below this hero, reached by scrolling — same content and structure as today, just restyled to match stage 3. STAGE 3 — SITE-WIDE THEME CHANGE Background: replace the current cream/peachy background with white, site-wide, not just the homepage. This isn't a one-line color swap — re-check contrast everywhere the old cream background was being read against: body text, the existing hairline diagram strokes and fills (tuned for the old background, may now read too faint or too harsh against pure white), and the stat/comparison break components. Fix anything that fails rather than leaving it to be discovered later. Spacing: reduce the current page-level padding/gutters so content sits noticeably closer to the viewport edges than it does now — tighter, closer to edge-to-edge — while keeping enough margin on mobile that nothing touches the literal screen edge or becomes hard to read. If this isn't the right amount, say so rather than guessing further. Heading font: replace Fraunces with Bricolage Grotesque (Google Font, variable weight) for all headings, nav, and section titles, loaded the same way Fraunces was. Also use it for the GLASSBOX wordmark itself, in both the header and hero — retire the separate Cinzel-only-for-wordmark rule from the earlier design pass; one confident display font suits this bolder direction better than three competing typefaces. Leave the Martian Mono numeral treatment for data figures completely alone. RULES THAT DON'T CHANGE: this is a visual redesign, not a functional one. Every existing demo (rate limiting, hashing, authn/authz, sessions/tokens, CORS) keeps its exact current logic and click-driven behavior — only restyle them. Keep all existing accessibility work (keyboard access, aria-live) exactly as is. Keep the mobile diagram-scrolls-instead-of-shrinks behavior exactly as is. Follow AGENTS.md: add a build log entry for this pass in the existing format, continuing the numbering, and update the “where this is up to” stats if anything about them changed. Work stage by stage as laid out, confirming each stage before starting the next. Confirm the whole pass with npm run typecheck, npm run lint, and npm run build.",
+    promptNote:
+      "The parts that carried the outcome were the constraints, not the descriptions: pure CSS with no new dependency, reduced motion handled the way the panels already do it, and two numbers the prompt refused to let stand on their own — the 6–8% opacity and the gutters — both flagged as needing a real check rather than a guess.",
+    faults: [
+      {
+        source: "defaults",
+        text: "The default glass face is a backdrop blur on all six faces, everywhere. Behind the hero the page is flat white, so that blur has nothing to blur and still costs frame time on a mid-range phone; the obvious implementation — one face style for both cubes — pays for an effect where it cannot even be seen. The fix was to make the blur opt-in and leave it off the large background cube, where a light box-shadow sheen stands in for the glass.",
+      },
+      {
+        source: "prompt",
+        text: "The starting opacity of 6–8% was a number chosen before anything was rendered. Measured against white it produces roughly 2–3% contrast, which is effectively invisible, because the glass is light to begin with. The instruction to adjust after a visual check is the part that caught it: sampling the pixels at each candidate value showed the cube only reads as a presence near 20%.",
+      },
+      {
+        source: "prompt",
+        text: "\"The first viewport shows only the wordmark and the cube — nothing else\" did not account for chrome that already renders on every page: a masthead carrying a tagline and the layer rail both land inside that first viewport. The prompt left the homepage's frame versus the content pages' frame undecided, so the restructure had to separate them.",
+      },
+      {
+        source: "docs",
+        text: "The old display face was Fraunces, loaded with its SOFT and WONK variation axes and referenced through font-variation-settings across the heading utilities. Swapping the family while leaving those axes in place is a silent no-op — the property simply does nothing on a face that lacks the axis — so the type scale looked updated while carrying a line that quietly stopped working. The axes had to be deleted, not left inert.",
+      },
+      {
+        source: "defaults",
+        text: "Changing a theme's background is read as a token change, and the token was changed first. That leaves the pairs that were tuned against the old cream — the ochre \"demo to come\" tag and the arrow between flow-break steps — failing contrast, with the panel and diagram fills nearly vanishing into white. An automated walk of every visible text node is what surfaced them, rather than a reader finding them later.",
+      },
+      {
+        source: "output",
+        text: "Under prefers-reduced-motion the large cube rendered as a flat square. The first version set the cube's transform only while it was not spinning, and the site's reduced-motion rule switches the spin animation off entirely, so the element was left with no transform at all — one face, not a still cube. Only emulating reduced motion in the browser and reading the computed transform caught it; the visual difference is obvious once seen and invisible in the source.",
+      },
+    ],
+    correction: [
+      "The cube is one component with a behaviour prop. Blur is opt-in and off on the large cube, which is pure transform and paints no backdrop filter; the small tracked cube keeps a 2px blur, which measured at 16.5ms median frame time on a 390px viewport with the CPU throttled 4x.",
+      "Cursor tracking eases toward a clamped target with a distance falloff, so the cube drifts back to rest when the pointer leaves. Reduced motion is read with the same useReducedMotion hook the register and the demos already use, so the small cube holds a neutral angle and the large one holds still by the same rule.",
+      "A pixel sample of rendered screenshots set the hero opacity at 20%, where the cube's darkest edge lands near L=241 on white: a presence in the corner of the eye, not an object. Pointer events were confirmed to pass straight through it.",
+      "The homepage was given its own composition. The content pages moved into a (site) route group with the masthead, rail and colophon frame, while the homepage renders its own masthead — tagline suppressed — inside a full-height hero holding only the wordmark and the cube, with the existing content unchanged below it.",
+      "The page is white site-wide, with two faint neutral fills carrying depth. A contrast walk of every page and every opened register panel reports zero AA failures; the strong rule and the ochre were darkened where they fell short, and the diagram strokes were checked against the new page.",
+      "Gutters were tightened to 14px on phones and 24–28px on desktop, with the measure widened to 1280px, so content sits closer to the viewport edge without touching it.",
+      "Fraunces and Cinzel were both removed. Bricolage Grotesque now sets headings, the nav and the wordmark, loaded as a variable weight; the dead serif axes were deleted rather than left in place. Martian Mono and its numeric treatment are untouched.",
+      "The resting angle is now always the cube's base transform, so a reduced-motion visitor sees a still, angled cube and the running animation simply overrides it otherwise. Confirmed by emulating reduce, reading the computed transform, then restoring motion and watching it move.",
+    ],
+    lesson:
+      "A visual number written into a brief — an opacity, a colour — is a hypothesis, and the instruction to verify it is doing the real work; read the value off the render instead of trusting it from the prompt. A background is never one token either: it is the whole set of contrasts that were tuned against the old one, and they only surface when something measures them.",
+  },
 ];
 
 /**
