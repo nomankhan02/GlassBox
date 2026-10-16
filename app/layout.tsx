@@ -65,11 +65,12 @@ export const metadata: Metadata = {
 };
 
 /*
-  The root layout keeps only what every route needs: the document, the font
-  variables and the outer measure. The chrome differs by route — the homepage
-  opens on a full-height hero, the content pages wear the masthead-and-rail
-  frame — so each of those compositions lives in its own layout or page rather
-  than here.
+  The root layout keeps only what every route needs: the document and the font
+  variables. The measure — the 1280px column and its gutters — is deliberately
+  not here any more, because the two compositions disagree about it: the content
+  pages sit inside it edge to edge, while the homepage hero has to reach the
+  screen edges and hold its contents to the same column. Each composition
+  declares its own measure; see app/page.tsx and app/(site)/layout.tsx.
 */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -85,12 +86,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
 
-        {/* Tighter gutters than before, and a wider measure: the content sits
-            closer to the viewport edge on every screen, while the 14px on the
-            smallest phones keeps text off the literal edge. */}
-        <div className="mx-auto w-full max-w-[1280px] px-3.5 sm:px-5 md:px-6 lg:px-7">
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );

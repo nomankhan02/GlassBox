@@ -54,6 +54,14 @@
   --color-marker: #8f5b07;
   --color-marker-tint: #f6e8c6;
 
+  /*
+    the void: the dark ground behind the live hero cube, read off
+    design-reference/hero-inspo.png — near-black, cooled a few degrees towards
+    blue. It is the only dark surface on the site and it never appears outside
+    the homepage hero.
+  */
+  --color-void: #05070b;
+
   /* semantic state, used only in demos and status marks */
   --color-ok: #35774b;
   --color-ok-tint: #e0ead9;
@@ -271,13 +279,44 @@
 }
 
 /*
-  The glass cube is drawn, not styled: it is an isometric SVG construction in
+  Two cubes, and neither is styled here.
+
+  The header mark is drawn, not styled: it is an isometric SVG construction in
   components/site/glass-cube.tsx, built from the same tokens the diagrams use
   (the rule-strong hairline, the accent tint as a translucent glass fill), with
-  its motion — the breathing float, the cursor-drag springs, the specular sweep
-  — handled by Framer Motion in the component. Nothing about it belongs in the
-  stylesheet, which is why there is no cube utility here any more.
+  its motion handled by Framer Motion in the component.
+
+  The hero cube is real: a three.js box with a transmission material in
+  components/site/hero-cube.tsx, rendered into a canvas whose ground is the
+  --color-void above. Nothing about either belongs in the stylesheet, which is
+  why there is no cube utility here.
 */
+
+/*
+  Light on dark, for the one dark ground on the site.
+
+  Rather than a second palette with its own names, this re-points the existing
+  tokens inside its own subtree: every rule, label, hairline and glass fill
+  underneath keeps saying "ink", "rule" and "accent-tint" and simply means the
+  light version of each. That includes the header mark in the hero
+  (components/site/glass-cube.tsx), which reads its strokes and fills from these
+  tokens and so turns light here without the component being touched.
+
+  --color-paper is in here for one reason: the glass mark's top face is filled
+  with the page colour, which on a dark ground would be a white blob. It is
+  re-pointed to a pale blue-grey so the mark reads as lit glass instead.
+*/
+@utility on-dark {
+  --color-paper: #dfe7ee;
+  --color-ink: #f4f6f8;
+  --color-ink-soft: #b6bec7;
+  --color-ink-faint: #8a939d;
+  --color-rule: rgb(255 255 255 / 0.16);
+  --color-rule-strong: rgb(255 255 255 / 0.34);
+  --color-accent: #7fc9ab;
+  --color-accent-tint: #9ec2dc;
+  color: var(--color-ink);
+}
 
 /* The small uppercase mono label that names a field. Used sparingly. */
 @utility field-label {

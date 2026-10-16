@@ -33,10 +33,21 @@ export default function Home() {
         The hero owns its own composition and its own exit: the wordmark, the
         cube and the lines beside it are carried up and faded out as the
         section scrolls past. See components/site/hero.tsx.
+
+        It also owns the full width of the screen — the black is the glass
+        cube's ground and it has to reach the edges — which is why the hero sits
+        outside the measure below it, and why the root layout no longer carries
+        a measure of its own. The class string on <main> and around the colophon
+        is the same column app/(site)/layout.tsx uses and the same one the hero
+        holds its own contents to; the homepage's whitespace has to line up with
+        the concepts page's or the two compositions stop reading as one site.
       */}
       <Hero />
 
-      <main id="content" className="pt-16 pb-20">
+      <main
+        id="content"
+        className="mx-auto w-full max-w-[1280px] px-3.5 pt-16 pb-20 sm:px-5 md:px-6 lg:px-7"
+      >
         <PageHead
           layer="—"
           layerNote="why this exists"
@@ -162,7 +173,9 @@ export default function Home() {
         </section>
       </main>
 
-      <Colophon />
+      <div className="mx-auto w-full max-w-[1280px] px-3.5 sm:px-5 md:px-6 lg:px-7">
+        <Colophon />
+      </div>
     </>
   );
 }

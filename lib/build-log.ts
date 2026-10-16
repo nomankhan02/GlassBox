@@ -372,6 +372,65 @@ export const BUILD_LOG: LogEntry[] = [
     lesson:
       "A visual number written into a brief — an opacity, a colour — is a hypothesis, and the instruction to verify it is doing the real work; read the value off the render instead of trusting it from the prompt. A background is never one token either: it is the whole set of contrasts that were tuned against the old one, and they only surface when something measures them.",
   },
+  {
+    id: "0011",
+    date: "2026-10-16",
+    dateLabel: "16 Oct 2026",
+    title: "A real cube, and the number that stopped being a guess",
+    context:
+      "The hero's cube had been drawn: an isometric SVG construction that looked like glass without being any. This pass replaced it with an actual renderer — three.js through React Three Fiber, drei's MeshTransmissionMaterial doing the refraction — against a reference image of the effect it was supposed to have. Everything else about the hero was to stay exactly as it was.",
+    prompt:
+      "Replace the hero's cube entirely with a real, live, rotating glass cube using React Three Fiber and drei's MeshTransmissionMaterial — not CSS, not a video. Install three, @react-three/fiber, and @react-three/drei. Before building, look at design-reference/hero-inspo.png — match its mood as closely as this technique allows: dark background behind the cube, soft studio-style lighting, slow rotation, visible chromatic aberration at the edges. Build: a simple box geometry (no external 3D model needed) with MeshTransmissionMaterial applied — tune transmission, thickness, roughness, and chromaticAberration to get as close to the reference as you can. Use drei's <Environment preset=\"studio\" /> (or whichever built-in preset reads closest to the reference) rather than sourcing an external HDR file. Rotate it slowly and continuously on its own, no cursor interaction needed for this one. Performance matters a lot here — per drei's own guidance, keep resolution and sample counts low (their docs specifically suggest something like 32x32 resolution still looks good and runs much faster). Test this on a mid-range mobile viewport before considering it done, and if it's janky, simplify further rather than shipping it slow. Handle two fallback cases: under prefers-reduced-motion, freeze the rotation instead of stopping all rendering. If WebGL isn't supported at all (check and handle this explicitly), fall back to a static image instead of attempting to render anything. Keep everything else from the last pass as-is: the hero text, the scroll-drawer exit effect, the black hero section with white text. Don't touch the header logo in this pass — that's a separate follow-up once this is verified working. Confirm with npm run typecheck, npm run lint, and npm run build.",
+    promptNote:
+      "The prompt asks for one specific and one unfalsifiable thing at once: chromatic aberration tuned to match a picture, which was done and checked, and a performance claim attached to a number (32x32 runs much faster) that this machine's software renderer could not resolve. The first was measurable. The second had to be reported as a construction argument rather than a measurement, which is written down below rather than rounded up.",
+    faults: [
+      {
+        source: "prompt",
+        text: "\"Keep everything else from the last pass as-is: ... the black hero section with white text\" described a hero that did not exist. The section on disk was white paper with dark text — the black in the prompt was the reference image. Two instructions pointed opposite ways (keep the hero exactly as it is, and put a dark ground behind the cube), and which one won decided the whole palette, so it had to be asked rather than guessed. The answer: black hero, white text, white page below it.",
+      },
+      {
+        source: "prompt",
+        text: "The contrast work was not in the request. Flipping the ground under a component does not flip its colours: every text pair in the hero, the hairline rules, and the glass fills of the header mark were all tuned against white and would have been invisible or marginal on black. \"Dark background behind the cube\" reads as a change to the cube's backdrop and is in fact a change to a palette.",
+      },
+      {
+        source: "defaults",
+        text: "The default answer to \"make it look like glass\" is the material's defaults: 256x256 transmission buffer, ten samples, roughness near zero, and drei's default chromatic aberration of 0.05. The first two are the expensive end of the settings, and 0.05 puts the strongest colour fringe in the frame at a chroma of 32 out of 255 where the reference's is 147 — visible in a diff and invisible on screen. Every one of those numbers is a decision the reference had already made.",
+      },
+      {
+        source: "defaults",
+        text: "Without the material's backside pass, the glass refracts an empty scene: the renderer removes the object from its own transmission buffer, so there is nothing behind the near faces to see through them but the background colour. The result is a dark box with lit edges — recognisable as glass, and wrong. The far faces have to be rendered into a second small buffer and refracted through the near ones, which is one more pass over twelve triangles and the difference between a shape and an object with an inside.",
+      },
+      {
+        source: "defaults",
+        text: "A transparent canvas is the tidier-looking choice — let the page's own black be the backdrop rather than repeating it in the scene — and it makes the seam worse, not better. With tone mapping in the pipeline the same hex renders a few levels darker than the CSS beside it, and a large flat area is exactly where a five-level step is visible. The canvas now paints its own ground, opaque, and the scene is set to skip tone mapping so the colour it was given is the colour it draws.",
+      },
+      {
+        source: "output",
+        text: "The first version of the WebGL gate asked the question in an effect and set state with the answer. That is the shape it is easiest to write, and the project's lint rules reject it (react-hooks/set-state-in-effect) for good reason: it renders the still, then renders again with a canvas, on every visit. useSyncExternalStore with a server snapshot does the same job in one pass and states the real problem — the server cannot ask a browser anything, so the answer is the still until hydration says otherwise.",
+      },
+      {
+        source: "output",
+        text: "The same gate gave a browser without WebGL the state \"checking\", which is what the component was doing rather than what it was showing. Nothing was broken on screen — the still was there and no canvas was mounted — but the honest state for a machine that can never run the cube is the still, and a check that reads the state caught the difference.",
+      },
+      {
+        source: "output",
+        text: "The verification harness spent most of the pass reporting the app as broken: in dev the page rendered and then sat there, never hydrating, on every route including ones this pass never touched. Next 16 refuses to serve its dev client across origins, and the harness was loading 127.0.0.1 while the server called itself localhost. The page was fine. A check that cannot tell its own path to the app from the app is a check that invents faults.",
+      },
+    ],
+    correction: [
+      "The hero is black, full bleed, with the white page below it; its inside is the site's own measure, so the wordmark in the hero lines up with the wordmark on every other page. The root layout gave up the measure for that, and the content pages and the homepage now each declare their own.",
+      "Light-on-dark is one utility, on-dark, which re-points the existing colour tokens for the hero's subtree instead of introducing a second palette: rules, labels and glass fills under it keep their names and mean the light version. The header mark was not touched — it draws itself from those tokens and turned light on its own, which is the check this pass runs.",
+      "The cube is a box, a MeshTransmissionMaterial, and drei's studio environment. Backside is on, with its own 64x64 buffer, because glass without it has no inside. The transmission buffer is 32x32 with four samples, the canvas runs at devicePixelRatio clamped to 1.5, and the scene skips tone mapping so the field it paints is exactly the field the hero is.",
+      "The material was tuned against the reference image with numbers rather than by eye: two screenshots, decoded in the page, compared on field luminance, blown highlights, colour fringing and contrast. Chromatic aberration went to 1.2 and thickness to 1.4; across a full turn the strongest fringe now runs from 43 to 250 where the reference's single frame sits at 147, and the field matches its near-black to within 0.02 of luminance.",
+      "The static fallback is not drawn by hand: scripts/hero-cube.mjs renders it from the live cube, waits until there is actually a lit cube in the frame before saving it (the shader compiles for a while on a software rasteriser), and checks that what it wrote is a lit cube on a dark field. It sits under the canvas as well as in place of it, so the first paint has an object in it and a browser without WebGL gets the same object still.",
+      "Under prefers-reduced-motion the rotation is dropped and the cube is left standing at an angle, still rendered, still lit — verified by pixel-diffing two captures 1.8 seconds apart: zero change under reduce, and nothing removed. The frame loop does go on-demand there, with a few nudged frames at the start so the environment that arrives late still gets drawn.",
+      "The WebGL check is explicit and runs before anything three.js-shaped is fetched: the scene is behind a dynamic import, and a browser that fails the check never downloads it. Confirmed by overriding canvas.getContext to refuse WebGL and watching the network log stay empty while the still stood in place.",
+      "The exit, the text and the reader's journey are what they were: the drawer still carries the hero up and fades it, the tips in the still are in the mono face, and every demo and every concept is untouched. Deleted scripts/verify-cube.mjs, whose subject was the drawn cube this pass replaced.",
+      "Against the mid-range phone (390x844, devicePixelRatio 3, CPU throttled 4x, software rendering): the frame interval holds at 16.7ms median with the cube live, and the render loop's share of a frame measures around 1-3ms over the same page without it. The 32x32 buffer against 256x256 could not be resolved by that measurement — both landed between 13.7ms and 21.8ms across runs — so the low buffer is claimed as cheaper by construction, not as measured.",
+    ],
+    lesson:
+      "A picture is a specification, and the parts of it you can measure are how you find out whether you matched it: an opacity, a fringe width, a field colour. The parts you cannot measure have to be reported as reasoned rather than tested, and saying which is which is the whole of the work. The same goes for the check itself — before believing a harness that says the app is broken, make it prove it can reach the app.",
+  },
 ];
 
 /**
