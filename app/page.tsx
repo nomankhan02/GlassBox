@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Masthead } from "@/components/site/masthead";
+import { Hero } from "@/components/site/hero";
 import { Colophon } from "@/components/site/colophon";
-import { GlassCube } from "@/components/site/glass-cube";
 import { PageHead } from "@/components/site/page-head";
 import { Break } from "@/components/site/break";
 import { PromptFragment } from "@/components/site/register";
@@ -31,27 +30,11 @@ export default function Home() {
   return (
     <>
       {/*
-        The hero: one full viewport, and only two things in it. The wordmark
-        sits at the top, the cube turns slowly at the centre, and there is
-        nothing else to read until you scroll. The cube is a background
-        presence rather than an object to operate — very low opacity, and
-        pointer-events disabled, so it can never intercept a click meant for
-        something behind it.
+        The hero owns its own composition and its own exit: the wordmark, the
+        cube and the lines beside it are carried up and faded out as the
+        section scrolls past. See components/site/hero.tsx.
       */}
-      <section className="relative flex min-h-svh flex-col overflow-hidden">
-        {/* The header inside the hero carries the wordmark alone; the tagline
-            belongs to the content pages' frame, not to a viewport that is
-            meant to hold only the mark and the cube. */}
-        <Masthead tagline={false} />
-
-        <div className="relative flex flex-1 items-center justify-center">
-          {/* The scale keeps the cube's layout box off the viewport edges on
-              small screens while the drawing stays huge on a desktop. */}
-          <div className="pointer-events-none scale-[0.54] opacity-20 md:scale-[0.76] lg:scale-100">
-            <GlassCube size={560} behavior="spin" blur={false} />
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       <main id="content" className="pt-16 pb-20">
         <PageHead

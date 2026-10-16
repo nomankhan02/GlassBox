@@ -6,9 +6,15 @@ export function FieldLabel({ children }: { children: ReactNode }) {
 }
 
 /*
-  The prompt fragment is the part of each entry a reader can reuse. It is set in
-  mono inside a recessed well with an accent edge, because it is a specimen of
-  wording rather than a paragraph of explanation.
+  The prompt fragment is the part of each entry a reader can reuse.
+
+  It used to be dressed as a terminal: monospace inside a recessed well with a
+  coloured left stripe. That was the strongest "system prompt" signal on the
+  page, and it told the reader they had left the explanation and arrived at some
+  code. This is guidance, so it is set as guidance — the plain prose of the site
+  under a hairline rule, carrying the same field label every other named part of
+  an entry uses, one step larger than the paragraphs around it because it is the
+  line a reader is meant to take away.
 */
 export function PromptFragment({
   children,
@@ -18,12 +24,12 @@ export function PromptFragment({
   label?: string;
 }) {
   return (
-    <div className="mt-5 border-l-2 border-accent bg-paper-sunk/70 py-3.5 pr-5 pl-4">
+    <aside data-prompt-fragment className="mt-7 border-t border-rule pt-3.5">
       <FieldLabel>{label}</FieldLabel>
-      <p className="mt-2 font-mono text-[12.5px] leading-[1.7] text-ink">
+      <p className="mt-2 max-w-[72ch] text-[14.5px] leading-[1.75] text-ink">
         {children}
       </p>
-    </div>
+    </aside>
   );
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePrefersReducedMotion } from "@/components/site/use-prefers-reduced-motion";
 import {
   decide,
   elapsed,
@@ -18,6 +19,29 @@ import {
 
 /** The site's one soft curve, shared with the CSS theme. */
 const EASE_SOFT: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+/*
+  The choreography for this demo, and the pattern the other four will follow.
+
+  Three gestures, each one saying something the old static squares could not:
+
+    arrival  a request springs in — fast and slightly overshooting, the way a
+             thing lands somewhere rather than fading up into place.
+    counter  the allowance bar and its number travel to the new reading on a
+             spring, so a counter moving from 4 to 5 reads as a mechanism
+             turning rather than a repaint.
+    refusal  a blocked request shakes once and flashes, in the row and on the
+             counter it was refused by. A refusal is an event, so it gets an
+             event's animation instead of a colour change.
+
+  Under reduced motion every one of them collapses to nothing rather than
+  swapping in a quieter effect: the states are all still on screen, because
+  they are the content, and only the movement is dropped.
+*/
+const SPRING_REQUEST = { type: "spring", stiffness: 460, damping: 30, mass: 0.7 } as const;
+const SPRING_COUNTER = { type: "spring", stiffness: 230, damping: 26, mass: 0.6 } as const;
+const SHAKE = { duration: 0.42, ease: EASE_SOFT } as const;
+const SHAKE_KEYFRAMES = [0, -5, 4, -3, 2, 0];
 
 /** Simulated round trip, so a request is visibly a round trip. */
 const LATENCY_MS = 430;
@@ -78,7 +102,11 @@ export function RateLimitDemo() {
   const timersRef = useRef<number[]>([]);
   const prevWindowsRef = useRef(state.windows);
   const resettingRef = useRef(false);
-  const reduceMotion = useReducedMotion();
+  /* The newest request the log has already shown, so a refusal is noticed once. */
+  const lastSeqRef = useRef(0);
+  /* The key whose last request was refused, held for the length of its shake. */
+  const [rejection, setRejection] = useState<{ id: IdentityId; key: number } | null>(null);
+  const reduceMotion = usePrefersReducedMotion();
 
   const transition = {
     duration: reduceMotion ? 0 : 0.28,
@@ -120,6 +148,27 @@ export function RateLimitDemo() {
     const timer = window.setTimeout(() => setFlash(null), 1100);
     return () => window.clearTimeout(timer);
   }, [state.windows]);
+
+  /*
+    A refusal is an event worth animating, and the log is where it arrives: the
+    newest entry is the one that just landed, and a 429 on it is the refusal.
+    Reading it here keeps the limiter untouched — the demo still only calls
+    `decide` and looks at what comes back.
+  */
+  useEffect(() => {
+    const newest = state.log[0];
+    if (!newest) {
+      lastSeqRef.current = 0;
+      return;
+    }
+    if (newest.seq === lastSeqRef.current) return;
+    lastSeqRef.current = newest.seq;
+    if (newest.status !== 429) return;
+
+    setRejection({ id: newest.identity, key: newest.seq });
+    const timer = window.setTimeout(() => setRejection(null), 760);
+    return () => window.clearTimeout(timer);
+  }, [state.log]);
 
   /** Send one request, a burst, or a flood — each one a separate arrival. */
   const send = useCallback((identity: IdentityId, count: number, gap: number) => {
@@ -207,28 +256,36 @@ export function RateLimitDemo() {
               })}
             </div>
 
+            {/* The buttons press in, and spring back: the one place the visitor's
+                own hand touches the demo. */}
             <div className="flex flex-wrap gap-2">
-              <button
+              <motion.button
                 type="button"
                 className={BTN_PRIMARY}
+                whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                transition={SPRING_REQUEST}
                 onClick={() => send(active, 1, 0)}
               >
                 Send request
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 className={BTN_SECONDARY}
+                whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                transition={SPRING_REQUEST}
                 onClick={() => send(active, 3, BURST_GAP_MS)}
               >
                 Send 3
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 className={BTN_SECONDARY}
+                whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                transition={SPRING_REQUEST}
                 onClick={() => send(active, 8, FLOOD_GAP_MS)}
               >
                 Flood 8
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -265,6 +322,8 @@ export function RateLimitDemo() {
           clock={clock}
           flash={flash}
           transition={transition}
+          rejection={rejection}
+          reduceMotion={!!reduceMotion}
         />
       </div>
 
@@ -360,55 +419,81 @@ function LogCell({
             const outsideWindow = !window || entry.arrival < window.startedAt;
             const allowed = entry.status === 200;
 
+            const refused = entry.status === 429;
+
             return (
               <motion.li
                 key={entry.seq}
+                data-entry={entry.seq}
+                data-entry-status={entry.status}
                 layout={!reduceMotion}
-                initial={reduceMotion ? false : { opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={transition}
-                className={`flex items-center gap-2.5 border-b border-rule/70 py-1.5 text-[11.5px] last:border-b-0 ${
+                initial={
+                  reduceMotion ? false : { opacity: 0, scale: 0.86, y: -8 }
+                }
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={reduceMotion ? { duration: 0 } : SPRING_REQUEST}
+                className={`relative border-b border-rule/70 last:border-b-0 ${
                   outsideWindow ? "opacity-40" : ""
-                }`}
+                } ${refused && reduceMotion ? "bg-bad-tint/40" : ""}`}
               >
-                <span
-                  aria-hidden
-                  className={`size-[6px] shrink-0 border ${
-                    pending
-                      ? "border-rule-strong bg-transparent"
-                      : allowed
-                        ? "border-ok bg-ok"
-                        : "border-bad bg-bad"
-                  }`}
-                />
-                <span className="w-9 shrink-0 readout text-[10.5px] text-ink-faint">
-                  #{String(entry.seq).padStart(3, "0")}
-                </span>
-                <span
-                  aria-hidden
-                  className={`size-[6px] shrink-0 ${KEY_DOT[entry.identity]}`}
-                />
-                <span className="w-[92px] shrink-0 font-mono text-[11px] text-ink-soft">
-                  {identity.key}
-                </span>
-                <span
-                  className={`w-10 shrink-0 readout text-[11.5px] ${
-                    pending
-                      ? "text-ink-faint"
-                      : allowed
-                        ? "text-ok"
-                        : "text-bad"
-                  }`}
+                {/* A refusal flashes behind its own row once, on arrival. */}
+                {refused && !reduceMotion ? (
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-bad-tint"
+                    initial={{ opacity: 0.85 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 0.75, ease: "easeOut" }}
+                  />
+                ) : null}
+
+                <motion.span
+                  data-request-body={entry.seq}
+                  className="relative flex items-center gap-2.5 py-1.5 text-[11.5px]"
+                  animate={
+                    refused && !reduceMotion ? { x: SHAKE_KEYFRAMES } : { x: 0 }
+                  }
+                  transition={refused && !reduceMotion ? SHAKE : transition}
                 >
-                  {pending ? "····" : entry.status}
-                </span>
-                <span className="min-w-0 flex-1 font-mono text-[10.5px] text-ink-faint">
-                  {pending
-                    ? "in flight"
-                    : allowed
-                      ? "allowed"
-                      : `refused · retry in ${entry.retryAfter}s`}
-                </span>
+                  <span
+                    aria-hidden
+                    className={`size-[6px] shrink-0 border ${
+                      pending
+                        ? "border-rule-strong bg-transparent"
+                        : allowed
+                          ? "border-ok bg-ok"
+                          : "border-bad bg-bad"
+                    }`}
+                  />
+                  <span className="w-9 shrink-0 readout text-[10.5px] text-ink-faint">
+                    #{String(entry.seq).padStart(3, "0")}
+                  </span>
+                  <span
+                    aria-hidden
+                    className={`size-[6px] shrink-0 ${KEY_DOT[entry.identity]}`}
+                  />
+                  <span className="w-[92px] shrink-0 font-mono text-[11px] text-ink-soft">
+                    {identity.key}
+                  </span>
+                  <span
+                    className={`w-10 shrink-0 readout text-[11.5px] ${
+                      pending
+                        ? "text-ink-faint"
+                        : allowed
+                          ? "text-ok"
+                          : "text-bad"
+                    }`}
+                  >
+                    {pending ? "····" : entry.status}
+                  </span>
+                  <span className="min-w-0 flex-1 font-mono text-[10.5px] text-ink-faint">
+                    {pending
+                      ? "in flight"
+                      : allowed
+                        ? "allowed"
+                        : `refused · retry in ${entry.retryAfter}s`}
+                  </span>
+                </motion.span>
               </motion.li>
             );
           })}
@@ -428,11 +513,15 @@ function MetersCell({
   clock,
   flash,
   transition,
+  rejection,
+  reduceMotion,
 }: {
   state: State;
   clock: number;
   flash: { ids: IdentityId[]; key: number } | null;
   transition: { duration: number; ease: [number, number, number, number] };
+  rejection: { id: IdentityId; key: number } | null;
+  reduceMotion: boolean;
 }) {
   return (
     <Cell
@@ -452,9 +541,20 @@ function MetersCell({
           const full = used >= LIMIT;
           const flashing = flash?.ids.includes(identity.id) ?? false;
           const urgent = window !== null && left <= 3_000;
+          /* This key is the one that was just refused. */
+          const rejected = rejection?.id === identity.id;
 
           return (
-            <div key={identity.id} className="relative">
+            <motion.div
+              key={identity.id}
+              data-meter={identity.id}
+              data-rejected={rejected ? "true" : "false"}
+              className="relative"
+              animate={
+                rejected && !reduceMotion ? { x: SHAKE_KEYFRAMES } : { x: 0 }
+              }
+              transition={rejected && !reduceMotion ? SHAKE : transition}
+            >
               <AnimatePresence>
                 {flashing ? (
                   <motion.span
@@ -465,6 +565,21 @@ function MetersCell({
                     animate={{ opacity: 0 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                ) : null}
+              </AnimatePresence>
+
+              {/* A refusal lands here too: the counter is what said no. */}
+              <AnimatePresence>
+                {rejected && !reduceMotion ? (
+                  <motion.span
+                    key={rejection?.key}
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-x-2 -inset-y-2 bg-bad-tint"
+                    initial={{ opacity: 0.9 }}
+                    animate={{ opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                   />
                 ) : null}
               </AnimatePresence>
@@ -482,46 +597,64 @@ function MetersCell({
                 <span
                   className={`readout text-[12px] ${full ? "text-bad" : "text-ink-soft"}`}
                 >
-                  {used}
+                  {/*
+                    The number is keyed on its own value, so it remounts on
+                    every change and springs up from a larger size: a counter
+                    that turns over rather than one that is redrawn.
+                  */}
+                  <motion.span
+                    key={used}
+                    className="inline-block"
+                    initial={reduceMotion ? false : { scale: 1.45, opacity: 0.55 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={reduceMotion ? { duration: 0 } : SPRING_COUNTER}
+                  >
+                    {used}
+                  </motion.span>
                   <span className="text-ink-faint"> / {LIMIT}</span>
                 </span>
               </div>
 
-              <div className="mt-2 flex gap-1" aria-hidden>
-                {Array.from({ length: LIMIT }).map((_, index) => {
-                  const filled = index < used;
-                  return (
+              {/*
+                The allowance, as one bar rather than five separate squares:
+                the fill travels to its new reading on a spring, and the five
+                cells stay drawn as ticks so the limit itself is still
+                countable at a glance.
+              */}
+              <div
+                data-meter-bar
+                className="relative mt-2 h-[16px] border border-rule-strong bg-paper-sunk"
+                aria-hidden
+              >
+                <span className="absolute inset-0 flex">
+                  {Array.from({ length: LIMIT }).map((_, index) => (
                     <span
                       key={index}
-                      className={`relative block h-[17px] flex-1 border ${
-                        full
-                          ? "border-bad/50 bg-bad-tint"
-                          : index === used
-                            ? "border-warn/50 bg-paper-sunk"
-                            : "border-rule-strong bg-paper-sunk"
-                      }`}
-                    >
-                      <motion.span
-                        className={`absolute inset-0 origin-bottom ${
-                          full ? "bg-bad" : "bg-accent-bright"
-                        }`}
-                        animate={{
-                          opacity: filled ? 1 : 0,
-                          scaleY: filled ? 1 : 0.25,
-                        }}
-                        transition={transition}
-                      />
-                    </span>
-                  );
-                })}
+                      className="flex-1 border-r border-rule-strong/60 last:border-r-0"
+                    />
+                  ))}
+                </span>
+                <motion.span
+                  data-meter-fill
+                  className={`absolute inset-y-0 left-0 w-full origin-left ${
+                    full ? "bg-bad" : "bg-accent-bright"
+                  }`}
+                  initial={false}
+                  animate={{ scaleX: used / LIMIT }}
+                  transition={transition}
+                />
               </div>
 
               <div className="mt-2.5 h-[4px] bg-paper-sunk">
-                <div
-                  className={`h-full transition-[width] duration-150 ease-linear ${
+                <motion.div
+                  data-meter-window
+                  className={`h-full origin-left ${
                     urgent ? "bg-warn" : "bg-accent-bright"
                   }`}
-                  style={{ width: `${elapsedFraction * 100}%` }}
+                  initial={false}
+                  animate={{ scaleX: elapsedFraction }}
+                  transition={{ duration: 0.15, ease: "linear" }}
+                  style={{ width: "100%" }}
                 />
               </div>
 
@@ -537,7 +670,7 @@ function MetersCell({
                   {window ? `${(left / 1000).toFixed(1)}s left` : "—"}
                 </span>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

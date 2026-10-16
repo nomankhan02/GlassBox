@@ -108,13 +108,19 @@ export default function BuildLogPage() {
           <h2 className="mt-4 text-[21px] md:text-[24px]">{entry.title}</h2>
           <p className="mt-3 max-w-[70ch] text-ink-soft">{entry.context}</p>
 
-          <div className="mt-6 border-l-2 border-accent bg-paper-sunk/70 py-3.5 pr-5 pl-4">
+          {/*
+            The prompt is transcribed, not quoted as code. It was set in mono
+            inside a recessed well with an accent edge, which read as a terminal
+            block on a page of prose; it now sits under the same hairline rule
+            and field label as every other named part of an entry.
+          */}
+          <div className="mt-7 border-t border-rule pt-3.5">
             <span className="field-label">the prompt, as sent</span>
-            <p className="mt-2 max-w-[72ch] font-mono text-[12.5px] leading-[1.7] text-ink">
+            <p className="mt-2 max-w-[72ch] text-[14.5px] leading-[1.75] text-ink">
               {entry.prompt}
             </p>
             {entry.promptNote ? (
-              <p className="mt-3 max-w-[72ch] font-mono text-[11px] leading-[1.65] text-ink-faint">
+              <p className="mt-3 max-w-[72ch] text-[13px] leading-[1.7] text-ink-faint">
                 {entry.promptNote}
               </p>
             ) : null}

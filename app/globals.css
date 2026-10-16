@@ -271,46 +271,13 @@
 }
 
 /*
-  The glass cube. Six faces built from CSS 3D transforms, no canvas and no
-  dependency. Each face is a pane of glass: a faint cool tint, a hairline edge
-  and a soft inner sheen that reads as a highlight on the surface. It is the
-  one place on the site that is genuinely translucent, and it earns that by
-  being the object the whole project is named after.
-
-  Blur is opt-in (`glass-blur`): the small tracked cube pays for a 2px
-  backdrop blur because it sits over page content, while the large background
-  cube leaves it off, where a blur over a flat white page would cost real frame
-  time and show nothing for it.
+  The glass cube is drawn, not styled: it is an isometric SVG construction in
+  components/site/glass-cube.tsx, built from the same tokens the diagrams use
+  (the rule-strong hairline, the accent tint as a translucent glass fill), with
+  its motion — the breathing float, the cursor-drag springs, the specular sweep
+  — handled by Framer Motion in the component. Nothing about it belongs in the
+  stylesheet, which is why there is no cube utility here any more.
 */
-@utility glass-face {
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgb(116 142 162 / 0.38);
-  background-color: rgb(150 176 192 / 0.1);
-  box-shadow:
-    inset 0 0 22px rgb(255 255 255 / 0.5),
-    inset 0 0 0 1px rgb(255 255 255 / 0.35);
-  backface-visibility: visible;
-}
-
-@utility glass-blur {
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-
-/* One slow turn every 26 seconds: present, never demanding attention. */
-@keyframes cube-spin {
-  from {
-    transform: rotateX(-8deg) rotateY(0deg);
-  }
-  to {
-    transform: rotateX(-8deg) rotateY(360deg);
-  }
-}
-
-@utility cube-spin {
-  animation: cube-spin 26s linear infinite;
-}
 
 /* The small uppercase mono label that names a field. Used sparingly. */
 @utility field-label {
